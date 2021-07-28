@@ -20,8 +20,17 @@ db.once("open", () => {
   console.log("Database connected!");
 });
 
-const createRoom = async () => {
-  const rooms = db.collection("rooms");
+const wrapper = (f) => {
+  return async function () {
+    try {
+      return await f.apply(this, arguments);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+};
+
+const createRoom = async (name) => {
   let res = await fetch("https://api.random.org/json-rpc/4/invoke", {
     method: "post",
     headers: { "Content-Type": "application/json" },
@@ -38,8 +47,11 @@ const createRoom = async () => {
     }),
   });
   res = await res.json();
-  [res] = res.result.random.data;
-  console.log(res);
+  const [room_key] = res.result.random.data;
+
+  const rooms = db.collection("rooms");
+  rooms.insertOne({ room_key, name });
+  return room_key;
 };
 
 module.exports = { createRoom };

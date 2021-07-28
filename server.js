@@ -1,4 +1,5 @@
 const { Telegraf, Markup } = require("telegraf");
+const { oneLine } = require("common-tags");
 const { createRoom } = require("./db");
 require("dotenv").config();
 
@@ -13,11 +14,18 @@ bot.start((ctx) => {
     ])
   );
 });
-createRoom();
-bot.action("CreateRoom", (ctx) => {
-  ctx.deleteMessage();
 
-  ctx.reply("Creating room...");
+bot.action("CreateRoom", async (ctx) => {
+  //   ctx.deleteMessage();
+  const { message_id } = await ctx.reply("Creating room...");
+
+  const name = (await ctx.getChat()).first_name;
+  const room_key = await createRoom(name);
+  ctx.deleteMessage(message_id);
+  await ctx.reply(oneLine`
+    Room has been created! Share the passcode with your friends for them to
+    join the room. The passcode for the room is:`);
+  ctx.replyWithHTML(`<b>${room_key}</b>`);
 });
 
 bot.launch();
