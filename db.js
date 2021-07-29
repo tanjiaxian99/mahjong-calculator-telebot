@@ -30,6 +30,15 @@ const wrapper = (f) => {
   };
 };
 
+const registerUser = async (chatId, name, username) => {
+  const users = db.collection("users");
+  await users.updateOne(
+    { chatId },
+    { $set: { chatId, name, username } },
+    { upsert: true }
+  );
+};
+
 const createRoom = async (chatId, name, username) => {
   let res = await fetch("https://api.random.org/json-rpc/4/invoke", {
     method: "post",
@@ -55,11 +64,7 @@ const createRoom = async (chatId, name, username) => {
   players[chatId] = { name, username, tally: 0 };
 
   await rooms.insertOne({ passcode, hostId: chatId, players });
-  await users.updateOne(
-    { chatId },
-    { $set: { chatId, name, username, passcode } },
-    { upsert: true }
-  );
+  await users.updateOne({ chatId }, { $set: { passcode } });
   return passcode;
 };
 
@@ -81,12 +86,8 @@ const joinRoom = async (chatId, name, username, passcode) => {
   }
 
   players[chatId] = { name, username, tally: 0 };
-  rooms.updateOne({ passcode }, { $set: { players } });
-  await users.updateOne(
-    { chatId },
-    { $set: { chatId, name, username, passcode } },
-    { upsert: true }
-  );
+  await rooms.updateOne({ passcode }, { $set: { players } });
+  await users.updateOne({ chatId }, { $set: { passcode } });
   return { hostId: room.hostId };
 };
 
@@ -112,9 +113,53 @@ const getTally = async (chatId) => {
   return totalTally;
 };
 
+const updateMenu = async (chatId, currentMenu) => {
+  const users = db.collection("users");
+  const user = await users.findOne({ chatId });
+
+  let menus = user.menus;
+  if (!menus || currentMenu === "Start") {
+    menus = [currentMenu];
+  } else if (menus.includes(currentMenu)) {
+    if (menus[menus.length - 1] === currentMenu) {
+      // Refreshed menu
+      return;
+    } else {
+      const index = menus.findIndex((e) => e === currentMenu);
+      menus = menus.slice(0, index + 1);
+    }
+  } else {
+    menus.push(currentMenu);
+  }
+
+  await users.updateOne(
+    { chatId },
+    {
+      $set: { menus },
+    },
+    { upsert: true }
+  );
+};
+
+const previousMenu = async (chatId, skips) => {
+  const users = db.collection("users");
+  const user = await users.findOne({ chatId });
+
+  if (!user) {
+    return null;
+  } else if (user.menus.length < 2) {
+    return null;
+  } else {
+    return user.menus[user.menus.length - skips - 1];
+  }
+};
+
 module.exports = {
+  registerUser: wrapper(registerUser),
   createRoom: wrapper(createRoom),
   joinRoom: wrapper(joinRoom),
   getRoomPlayers: wrapper(getRoomPlayers),
   getTally: wrapper(getTally),
+  updateMenu: wrapper(updateMenu),
+  previousMenu: wrapper(previousMenu),
 };
