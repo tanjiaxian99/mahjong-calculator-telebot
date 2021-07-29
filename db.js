@@ -53,8 +53,13 @@ const createRoom = async (chatId, name) => {
   const users = db.collection("users");
   const players = {};
   players[chatId] = 0;
-  await rooms.insertOne({ passcode, name, players });
-  await users.updateOne({ chatId }, { $set: { chatId, name, passcode } });
+
+  await rooms.insertOne({ passcode, hostId: chatId, players });
+  await users.updateOne(
+    { chatId },
+    { $set: { chatId, name, passcode } },
+    { upsert: true }
+  );
   return passcode;
 };
 
@@ -63,20 +68,25 @@ const joinRoom = async (chatId, name, passcode) => {
   const users = db.collection("users");
   const room = await rooms.findOne({ passcode });
   if (!room) {
-    return null;
+    return { error: "No such room" };
   }
 
   const players = room.players;
   if (Object.keys(players).length >= 4) {
-    return null;
+    return { error: "Room full" };
   }
 
   players[chatId] = 0;
-
   rooms.updateOne({ passcode }, { $set: { players } });
-  await users.updateOne({ chatId }, { $set: { chatId, name, passcode } });
-  return players;
+  await users.updateOne(
+    { chatId },
+    { $set: { chatId, name, passcode } },
+    { upsert: true }
+  );
+  return { hostId: room.hostId };
 };
+
+const updateRoomMaster = async () => {};
 
 module.exports = {
   createRoom: wrapper(createRoom),

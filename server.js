@@ -35,12 +35,26 @@ bot.action("JoinRoom", async (ctx) => {
 
 // Passcode
 bot.hears(/^[a-z]{6}$/, async (ctx) => {
-  //   const { id, first_name } = await ctx.getChat();
-  const { id, first_name } = { id: 1001, first_name: "test" };
+  const { id, first_name } = await ctx.getChat();
+  //   const { id, first_name } = { id: 1001, first_name: "test" };
   const passcode = ctx.match.input;
-  const players = await joinRoom(id, first_name, passcode);
-  console.log(players);
+  const response = await joinRoom(id, first_name, passcode);
+  console.log("test");
+  if (response.error === "No such room") {
+    ctx.reply("Room does not exist.");
+  } else if (response.error === "Room full") {
+    ctx.reply("Room is full. Please join another room or create a new room.");
+  } else {
+    ctx.reply(oneLine`You have succesfully joined the room! Please wait for the 
+      host to start the game.`);
+    ctx.telegram.sendMessage(
+      response.hostId,
+      `${first_name} has joined the room.`
+    );
+  }
 });
+
+// TODO passcode of incorrect format
 
 bot.launch();
 
