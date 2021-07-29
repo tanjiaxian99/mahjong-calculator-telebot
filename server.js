@@ -39,11 +39,13 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
   //   const { id, first_name } = { id: 1001, first_name: "test" };
   const passcode = ctx.match.input;
   const response = await joinRoom(id, first_name, passcode);
-  console.log("test");
+
   if (response.error === "No such room") {
     ctx.reply("Room does not exist.");
   } else if (response.error === "Room full") {
     ctx.reply("Room is full. Please join another room or create a new room.");
+  } else if (response.error === "Player exists") {
+    ctx.reply("You have already joined the room.");
   } else {
     ctx.reply(oneLine`You have succesfully joined the room! Please wait for the 
       host to start the game.`);

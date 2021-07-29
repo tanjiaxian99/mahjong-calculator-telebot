@@ -76,6 +76,10 @@ const joinRoom = async (chatId, name, passcode) => {
     return { error: "Room full" };
   }
 
+  if (players[chatId] != undefined) {
+    return { error: "Player exists" };
+  }
+
   players[chatId] = 0;
   rooms.updateOne({ passcode }, { $set: { players } });
   await users.updateOne(
