@@ -1,6 +1,6 @@
 const { Telegraf, Markup } = require("telegraf");
 const { oneLine } = require("common-tags");
-const { createRoom, joinRoom, getRoomPlayers } = require("./db");
+const { createRoom, joinRoom, getRoomPlayers, getTally } = require("./db");
 require("dotenv").config();
 
 const bot = new Telegraf(process.env.TOKEN);
@@ -19,8 +19,8 @@ bot.action("CreateRoom", async (ctx) => {
   //   ctx.deleteMessage();
   const { message_id } = await ctx.reply("Creating room...");
 
-  const { id, first_name } = await ctx.getChat();
-  const passcode = await createRoom(id, first_name);
+  const { id, first_name, username } = await ctx.getChat();
+  const passcode = await createRoom(id, first_name, username);
   ctx.deleteMessage(message_id);
 
   await ctx.reply(oneLine`
@@ -35,10 +35,12 @@ bot.action("JoinRoom", async (ctx) => {
 
 // Passcode
 bot.hears(/^[a-z]{6}$/, async (ctx) => {
-  const { id, first_name } = await ctx.getChat();
+  // TODO can't join another room if the player is already in a room
+
+  const { id, first_name, username } = await ctx.getChat();
   //   const { id, first_name } = { id: 1001, first_name: "test" };
   const passcode = ctx.match.input;
-  const response = await joinRoom(id, first_name, passcode);
+  const response = await joinRoom(id, first_name, username, passcode);
 
   if (response.error === "No such room") {
     ctx.reply("Room does not exist.");
@@ -87,7 +89,19 @@ bot.action("StartGame", async (ctx) => {
 
 bot.action("Pay", async (ctx) => {});
 
-bot.action("ViewTally", async (ctx) => {});
+// View tally
+bot.action("ViewTally", async (ctx) => {
+  const { id } = await ctx.getChat();
+  const totalTally = await getTally(id);
+  ctx.replyWithHTML(
+    totalTally.reduce(
+      (accumulator, currentValue) =>
+        accumulator +
+        `<b>${currentValue.name}</b> (${currentValue.username}): $${currentValue.tally}\n`,
+      ""
+    )
+  );
+});
 
 bot.launch();
 

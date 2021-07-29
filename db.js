@@ -30,7 +30,7 @@ const wrapper = (f) => {
   };
 };
 
-const createRoom = async (chatId, name) => {
+const createRoom = async (chatId, name, username) => {
   let res = await fetch("https://api.random.org/json-rpc/4/invoke", {
     method: "post",
     headers: { "Content-Type": "application/json" },
@@ -52,18 +52,18 @@ const createRoom = async (chatId, name) => {
   const rooms = db.collection("rooms");
   const users = db.collection("users");
   const players = {};
-  players[chatId] = 0;
+  players[chatId] = { name, username, tally: 0 };
 
   await rooms.insertOne({ passcode, hostId: chatId, players });
   await users.updateOne(
     { chatId },
-    { $set: { chatId, name, passcode } },
+    { $set: { chatId, name, username, passcode } },
     { upsert: true }
   );
   return passcode;
 };
 
-const joinRoom = async (chatId, name, passcode) => {
+const joinRoom = async (chatId, name, username, passcode) => {
   const rooms = db.collection("rooms");
   const users = db.collection("users");
   const room = await rooms.findOne({ passcode });
@@ -80,11 +80,11 @@ const joinRoom = async (chatId, name, passcode) => {
     return { error: "Player exists" };
   }
 
-  players[chatId] = 0;
+  players[chatId] = { name, username, tally: 0 };
   rooms.updateOne({ passcode }, { $set: { players } });
   await users.updateOne(
     { chatId },
-    { $set: { chatId, name, passcode } },
+    { $set: { chatId, name, username, passcode } },
     { upsert: true }
   );
   return { hostId: room.hostId };
@@ -96,8 +96,25 @@ const getRoomPlayers = async (hostId) => {
   return Object.keys(room.players).map((id) => parseInt(id));
 };
 
+const getTally = async (chatId) => {
+  const rooms = db.collection("rooms");
+  const users = db.collection("users");
+
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  const room = await rooms.findOne({ passcode });
+  const players = room.players;
+  const totalTally = [];
+
+  Object.keys(players).forEach((playerId) =>
+    totalTally.push(players[playerId])
+  );
+  return totalTally;
+};
+
 module.exports = {
   createRoom: wrapper(createRoom),
   joinRoom: wrapper(joinRoom),
   getRoomPlayers: wrapper(getRoomPlayers),
+  getTally: wrapper(getTally),
 };
