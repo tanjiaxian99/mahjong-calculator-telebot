@@ -1,6 +1,6 @@
 const { Telegraf, Markup } = require("telegraf");
 const { oneLine } = require("common-tags");
-const { createRoom, joinRoom } = require("./db");
+const { createRoom, joinRoom, getRoomPlayers } = require("./db");
 require("dotenv").config();
 
 const bot = new Telegraf(process.env.TOKEN);
@@ -47,11 +47,14 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
   } else if (response.error === "Player exists") {
     ctx.reply("You have already joined the room.");
   } else {
-    ctx.reply(oneLine`You have succesfully joined the room! Please wait for the 
+    ctx.reply(oneLine`You have succesfully joined the room! Please wait for the
       host to start the game.`);
     ctx.telegram.sendMessage(
       response.hostId,
-      `${first_name} has joined the room.`
+      `${first_name} has joined the room.`,
+      Markup.inlineKeyboard([
+        [Markup.button.callback("Start game", "StartGame")], // TODO only show when there are 4 players
+      ])
     );
   }
 });
@@ -59,9 +62,32 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
 // Passcode of invalid format
 bot.on("text", (ctx) => {
   ctx.reply(
-    "Passcode has invalid format. Passcode should consists of 6 lower-case letters."
+    "Invalid passcode format. Passcode should consists of 6 lower-case letters."
   );
 });
+
+// Start game
+bot.action("StartGame", async (ctx) => {
+  ctx.deleteMessage();
+
+  const { id } = await ctx.getChat();
+  const playerIds = await getRoomPlayers(id);
+
+  playerIds.forEach((playerId) => {
+    ctx.telegram.sendMessage(
+      playerId,
+      "The game has began! What would you like to do?",
+      Markup.inlineKeyboard([
+        [Markup.button.callback("Pay", "Pay")],
+        [Markup.button.callback("View tally", "ViewTally")],
+      ])
+    );
+  });
+});
+
+bot.action("Pay", async (ctx) => {});
+
+bot.action("ViewTally", async (ctx) => {});
 
 bot.launch();
 

@@ -90,9 +90,14 @@ const joinRoom = async (chatId, name, passcode) => {
   return { hostId: room.hostId };
 };
 
-const updateRoomMaster = async () => {};
+const getRoomPlayers = async (hostId) => {
+  const rooms = db.collection("rooms");
+  const room = await rooms.findOne({ hostId });
+  return Object.keys(room.players).map((id) => parseInt(id));
+};
 
 module.exports = {
   createRoom: wrapper(createRoom),
   joinRoom: wrapper(joinRoom),
+  getRoomPlayers: wrapper(getRoomPlayers),
 };
