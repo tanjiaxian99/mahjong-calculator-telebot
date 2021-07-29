@@ -30,7 +30,7 @@ const wrapper = (f) => {
   };
 };
 
-const createRoom = async (name) => {
+const createRoom = async (chatId, name) => {
   let res = await fetch("https://api.random.org/json-rpc/4/invoke", {
     method: "post",
     headers: { "Content-Type": "application/json" },
@@ -47,11 +47,38 @@ const createRoom = async (name) => {
     }),
   });
   res = await res.json();
-  const [room_key] = res.result.random.data;
+  const [passcode] = res.result.random.data;
 
   const rooms = db.collection("rooms");
-  rooms.insertOne({ room_key, name });
-  return room_key;
+  const users = db.collection("users");
+  const players = {};
+  players[chatId] = 0;
+  await rooms.insertOne({ passcode, name, players });
+  await users.updateOne({ chatId }, { $set: { chatId, name, passcode } });
+  return passcode;
 };
 
-module.exports = { createRoom };
+const joinRoom = async (chatId, name, passcode) => {
+  const rooms = db.collection("rooms");
+  const users = db.collection("users");
+  const room = await rooms.findOne({ passcode });
+  if (!room) {
+    return null;
+  }
+
+  const players = room.players;
+  if (Object.keys(players).length >= 4) {
+    return null;
+  }
+
+  players[chatId] = 0;
+
+  rooms.updateOne({ passcode }, { $set: { players } });
+  await users.updateOne({ chatId }, { $set: { chatId, name, passcode } });
+  return players;
+};
+
+module.exports = {
+  createRoom: wrapper(createRoom),
+  joinRoom: wrapper(joinRoom),
+};
