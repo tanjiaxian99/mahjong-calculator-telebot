@@ -56,7 +56,12 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
   }
 });
 
-// TODO passcode of incorrect format
+// Passcode of invalid format
+bot.on("text", (ctx) => {
+  ctx.reply(
+    "Passcode has invalid format. Passcode should consists of 6 lower-case letters."
+  );
+});
 
 bot.launch();
 
