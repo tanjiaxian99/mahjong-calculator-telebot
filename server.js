@@ -151,6 +151,7 @@ bot.action("Pay", async (ctx) => {
       [Markup.button.callback("Bite", "Pay_Bite")],
       [Markup.button.callback("Double Bite", "Pay_Double Bite")],
       [Markup.button.callback("Kong", "Pay_Kong")],
+      [Markup.button.callback("Matching Flowers", "Pay_Matching Flowers")],
       [Markup.button.callback("🔙 Back", previousMenu)],
     ])
   );
@@ -180,7 +181,10 @@ bot.action(/Pay_.+/, async (ctx) => {
     return accumulator;
   }, []);
 
-  buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
+  if (type !== "Matching Flowers") {
+    buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
+  }
+
   buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
 
   ctx.reply("Who shot the tile?", Markup.inlineKeyboard(buttons));

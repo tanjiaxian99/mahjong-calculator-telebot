@@ -218,6 +218,14 @@ const updateTally = async (type, shooterId, winnerId) => {
     case "Zimo Kong":
       updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
       break;
+    case "Matching Flowers":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.kong.shooter,
+        0,
+        bets.kong.shooter
+      );
   }
 };
 
