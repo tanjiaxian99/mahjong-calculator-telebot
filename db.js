@@ -205,7 +205,6 @@ const updateTally = async (type, shooterId, winnerId) => {
       updateZimoTally(winnerId, bets.kong.shooter, bets.kong.shooter * 3);
       break;
     case "Double Bite":
-    case "Zimo Kong":
       updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
       break;
     case "Kong":
@@ -216,6 +215,9 @@ const updateTally = async (type, shooterId, winnerId) => {
         0,
         bets.kong.shooter * 3
       );
+    case "Zimo Kong":
+      updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
+      break;
   }
 };
 

@@ -59,7 +59,7 @@ bot.action("CreateRoom", async (ctx) => {
     Room has been created! Share the passcode with your friends for them to
     join the room. The passcode for the room is:
     <b>${passcode}</b>`,
-    Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
+    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
 });
 
@@ -67,7 +67,7 @@ bot.action("JoinRoom", async (ctx) => {
   const previousMenu = await getPreviousMenu(ctx, 1);
   ctx.reply(
     "Please key in the 6-letter passcode below.", // TODO: delete this message
-    Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
+    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
 });
 
@@ -84,17 +84,17 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
   if (response.error === "No such room") {
     ctx.reply(
       "Room does not exist.",
-      Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
+      Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
     );
   } else if (response.error === "Room full") {
     ctx.reply(
       "Room is full. Please join another room or create a new room.",
-      Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
+      Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
     );
   } else if (response.error === "Player exists") {
     ctx.reply(
       "You have already joined the room.",
-      Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
+      Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
     );
   } else {
     ctx.reply(oneLine`You have succesfully joined the room! Please wait for the
@@ -104,7 +104,7 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
       `${first_name} has joined the room.`,
       Markup.inlineKeyboard([
         [Markup.button.callback("Start game", "StartGame")], // TODO only show when there are 4 players
-        [Markup.button.callback("Back", previousMenu)],
+        [Markup.button.callback("🔙 Back", previousMenu)],
       ])
     );
   }
@@ -143,15 +143,15 @@ bot.action("Pay", async (ctx) => {
   ctx.reply(
     "How much did you win by?",
     Markup.inlineKeyboard([
-      [Markup.button.callback("1 Tai", "Pay_1 Tai")],
-      [Markup.button.callback("2 Tai", "Pay_2 Tai")],
-      [Markup.button.callback("3 Tai", "Pay_3 Tai")],
-      [Markup.button.callback("4 Tai", "Pay_4 Tai")],
-      [Markup.button.callback("5 Tai", "Pay_5 Tai")],
+      [Markup.button.callback("1️⃣ Tai", "Pay_1 Tai")],
+      [Markup.button.callback("2️⃣ Tai", "Pay_2 Tai")],
+      [Markup.button.callback("3️⃣ Tai", "Pay_3 Tai")],
+      [Markup.button.callback("4️⃣ Tai", "Pay_4 Tai")],
+      [Markup.button.callback("5️⃣ Tai", "Pay_5 Tai")],
       [Markup.button.callback("Bite", "Pay_Bite")],
       [Markup.button.callback("Double Bite", "Pay_Double Bite")],
       [Markup.button.callback("Kong", "Pay_Kong")],
-      [Markup.button.callback("Back", previousMenu)],
+      [Markup.button.callback("🔙 Back", previousMenu)],
     ])
   );
 });
@@ -181,7 +181,7 @@ bot.action(/Pay_.+/, async (ctx) => {
   }, []);
 
   buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
-  buttons.push([Markup.button.callback("Back", previousMenu)]);
+  buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
 
   ctx.reply("Who shot the tile?", Markup.inlineKeyboard(buttons));
 });
@@ -208,7 +208,7 @@ bot.action("ViewTally", async (ctx) => {
         )}\n`,
       ""
     ),
-    Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
+    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
 });
 
