@@ -124,6 +124,7 @@ bot.action("StartGame", async (ctx) => {
   const playerIds = await getRoomPlayers(id);
 
   playerIds.forEach((player) => {
+    // TODO: sent to each player when player presses back
     ctx.telegram.sendMessage(
       player.chatId,
       "The game has began! What would you like to do?",
@@ -155,7 +156,7 @@ bot.action("Pay", async (ctx) => {
   );
 });
 
-bot.action(/Pay_[a-zA-Z]+/, async (ctx) => {
+bot.action(/Pay_.+/, async (ctx) => {
   const type = ctx.match.input.split("_")[1];
   const { id } = await ctx.getChat();
   const players = await getRoomPlayers(id);

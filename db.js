@@ -135,18 +135,71 @@ const updateTally = async (type, shooterId, winnerId) => {
   const users = db.collection("users");
   const players = await getRoomPlayers(winnerId);
 
+  // Resets tally for testing purposes
+  for (const player of players) {
+    await users.updateOne({ chatId: player.chatId }, { $set: { tally: 0 } });
+  }
+
   switch (type) {
     case "1 Tai":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.twoTai.shooter * 2 + bets.oneTai.zimo,
+        0,
+        bets.oneTai.shooter * 2 + bets.oneTai.zimo
+      );
+      break;
     case "2 Tai":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.twoTai.shooter * 2 + bets.twoTai.zimo,
+        0,
+        bets.twoTai.shooter * 2 + bets.twoTai.zimo
+      );
+      break;
     case "3 Tai":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.threeTai.shooter * 2 + bets.threeTai.zimo,
+        0,
+        bets.threeTai.shooter * 2 + bets.threeTai.zimo
+      );
+      break;
     case "4 Tai":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.fourTai.shooter * 2 + bets.fourTai.zimo,
+        0,
+        bets.fourTai.shooter * 2 + bets.fourTai.zimo
+      );
+      break;
     case "5 Tai":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.fiveTai.shooter * 2 + bets.fiveTai.zimo,
+        0,
+        bets.fiveTai.shooter * 2 + bets.fiveTai.zimo
+      );
       break;
     case "Zimo 1 Tai":
+      updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
+      break;
     case "Zimo 2 Tai":
+      updateZimoTally(winnerId, bets.twoTai.zimo, bets.twoTai.zimo * 3);
+      break;
     case "Zimo 3 Tai":
+      updateZimoTally(winnerId, bets.threeTai.zimo, bets.threeTai.zimo * 3);
+      break;
     case "Zimo 4 Tai":
+      updateZimoTally(winnerId, bets.fourTai.zimo, bets.fourTai.zimo * 3);
+      break;
     case "Zimo 5 Tai":
+      updateZimoTally(winnerId, bets.fiveTai.zimo, bets.fiveTai.zimo * 3);
       break;
     case "Bite":
       updateZimoTally(winnerId, bets.kong.shooter, bets.kong.shooter * 3);
@@ -160,12 +213,19 @@ const updateTally = async (type, shooterId, winnerId) => {
         shooterId,
         winnerId,
         bets.kong.shooter * 3,
+        0,
         bets.kong.shooter * 3
       );
   }
 };
 
-const updateShooterTally = async (shooterId, winnerId, loses, wins) => {
+const updateShooterTally = async (
+  shooterId,
+  winnerId,
+  shooterLoss,
+  othersLoss,
+  winnerWins
+) => {
   const users = db.collection("users");
   const players = await getRoomPlayers(winnerId);
 
@@ -173,18 +233,23 @@ const updateShooterTally = async (shooterId, winnerId, loses, wins) => {
     if (player.chatId === parseInt(shooterId)) {
       await users.updateOne(
         { chatId: player.chatId },
-        { $inc: { tally: -loses } }
+        { $inc: { tally: -shooterLoss } }
       );
     } else if (player.chatId === winnerId) {
       await users.updateOne(
         { chatId: player.chatId },
-        { $inc: { tally: wins } }
+        { $inc: { tally: winnerWins } }
+      );
+    } else {
+      await users.updateOne(
+        { chatId: player.chatId },
+        { $inc: { tally: othersLoss } }
       );
     }
   }
 };
 
-const updateZimoTally = async (winnerId, loses, wins) => {
+const updateZimoTally = async (winnerId, othersLoss, winnerWins) => {
   const users = db.collection("users");
   const players = await getRoomPlayers(winnerId);
 
@@ -192,12 +257,12 @@ const updateZimoTally = async (winnerId, loses, wins) => {
     if (player.chatId !== parseInt(winnerId)) {
       await users.updateOne(
         { chatId: player.chatId },
-        { $inc: { tally: -loses } }
+        { $inc: { tally: -othersLoss } }
       );
     } else {
       await users.updateOne(
         { chatId: player.chatId },
-        { $inc: { tally: wins } }
+        { $inc: { tally: winnerWins } }
       );
     }
   }
