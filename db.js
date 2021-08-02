@@ -104,16 +104,31 @@ const getRoomPlayers = async (chatId) => {
 };
 
 const tenTwenty = {
-  oneTai: 0.1,
-  twoTai: 0.2,
-  threeTai: 0.4,
-  fourTai: 0.8,
-  fiveTai: 1.6,
-  kong: 0.1,
-  hiddenKong: 0.2,
+  oneTai: {
+    shooter: 0.1,
+    zimo: 0.2,
+  },
+  twoTai: {
+    shooter: 0.2,
+    zimo: 0.4,
+  },
+  threeTai: {
+    shooter: 0.4,
+    zimo: 0.8,
+  },
+  fourTai: {
+    shooter: 0.8,
+    zimo: 1.6,
+  },
+  fiveTai: {
+    shooter: 1.6,
+    zimo: 3.2,
+  },
+  kong: {
+    shooter: 0.1,
+    zimo: 0.2,
+  },
 };
-const threeSixHalf = [2, 3, 5, 10, 20, 1, 1];
-const threeSix = [4, 7, 11, 20, 40, 3, 2];
 const bets = tenTwenty;
 
 const updateTally = async (type, shooterId, winnerId) => {
@@ -122,17 +137,29 @@ const updateTally = async (type, shooterId, winnerId) => {
   const players = await getRoomPlayers(winnerId);
 
   switch (type) {
+    case "1 Tai":
+    case "2 Tai":
+    case "3 Tai":
+    case "4 Tai":
+    case "5 Tai":
+      break;
+    case "Zimo 1 Tai":
+    case "Zimo 2 Tai":
+    case "Zimo 3 Tai":
+    case "Zimo 4 Tai":
+    case "Zimo 5 Tai":
+      break;
     case "Bite":
       for (const player of players) {
         if (player.chatId !== parseInt(winnerId)) {
           await users.updateOne(
             { chatId: player.chatId },
-            { $inc: { tally: -bets.kong } }
+            { $inc: { tally: -bets.kong.shooter } }
           );
         } else {
           await users.updateOne(
             { chatId: player.chatId },
-            { $inc: { tally: bets.kong * 3 } }
+            { $inc: { tally: bets.kong.shooter * 3 } }
           );
         }
       }
@@ -143,12 +170,12 @@ const updateTally = async (type, shooterId, winnerId) => {
         if (player.chatId !== parseInt(winnerId)) {
           await users.updateOne(
             { chatId: player.chatId },
-            { $inc: { tally: -bets.hiddenKong } }
+            { $inc: { tally: -bets.kong.zimo } }
           );
         } else {
           await users.updateOne(
             { chatId: player.chatId },
-            { $inc: { tally: bets.hiddenKong * 3 } }
+            { $inc: { tally: bets.kong.zimo * 3 } }
           );
         }
       }
@@ -158,12 +185,12 @@ const updateTally = async (type, shooterId, winnerId) => {
         if (player.chatId === parseInt(shooterId)) {
           await users.updateOne(
             { chatId: player.chatId },
-            { $inc: { tally: -bets.kong * 3 } }
+            { $inc: { tally: -bets.kong.shooter * 3 } }
           );
         } else if (player.chatId === winnerId) {
           await users.updateOne(
             { chatId: player.chatId },
-            { $inc: { tally: bets.kong * 3 } }
+            { $inc: { tally: bets.kong.shooter * 3 } }
           );
         }
       }

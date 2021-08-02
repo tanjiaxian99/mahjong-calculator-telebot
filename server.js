@@ -136,6 +136,7 @@ bot.action("StartGame", async (ctx) => {
   });
 });
 
+// Pay menu
 bot.action("Pay", async (ctx) => {
   const previousMenu = await getPreviousMenu(ctx, 1);
   ctx.reply(
@@ -178,7 +179,7 @@ bot.action(/Pay_[a-zA-Z]+/, async (ctx) => {
     return accumulator;
   }, []);
 
-  buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_000000000`)]);
+  buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
   buttons.push([Markup.button.callback("Back", previousMenu)]);
 
   ctx.reply("Who shot the tile?", Markup.inlineKeyboard(buttons));
