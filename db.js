@@ -137,7 +137,8 @@ const updateTally = async (type, shooterId, winnerId) => {
         }
       }
       break;
-    case "Double Bite / Hidden Kong":
+    case "Double Bite":
+    case "Zimo Kong":
       for (const player of players) {
         if (player.chatId !== parseInt(winnerId)) {
           await users.updateOne(

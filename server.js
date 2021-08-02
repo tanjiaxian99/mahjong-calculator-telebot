@@ -147,13 +147,8 @@ bot.action("Pay", async (ctx) => {
       [Markup.button.callback("4 Tai", "Pay_4 Tai")],
       [Markup.button.callback("5 Tai", "Pay_5 Tai")],
       [Markup.button.callback("Bite", "Pay_Bite")],
+      [Markup.button.callback("Double Bite", "Pay_Double Bite")],
       [Markup.button.callback("Kong", "Pay_Kong")],
-      [
-        Markup.button.callback(
-          "Double Bite / Hidden Kong",
-          "Pay_Double Bite / Hidden Kong"
-        ),
-      ],
       [Markup.button.callback("Back", previousMenu)],
     ])
   );
@@ -165,9 +160,9 @@ bot.action(/Pay_[a-zA-Z]+/, async (ctx) => {
   const players = await getRoomPlayers(id);
 
   // Bite and Hidden Bite / Hidden Kong reduces everyones winnings immediately
-  if (type === "Bite" || type === "Double Bite / Hidden Kong") {
+  if (type === "Bite" || type === "Double Bite") {
     updateTally(type, null, id);
-    return ctx.answerCbQuery(`Tally updated with ${type} winnings`); // TODO: describe how tally is updated
+    return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
   }
 
   const previousMenu = await getPreviousMenu(ctx, 1);
@@ -182,15 +177,18 @@ bot.action(/Pay_[a-zA-Z]+/, async (ctx) => {
     }
     return accumulator;
   }, []);
+
+  buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_000000000`)]);
   buttons.push([Markup.button.callback("Back", previousMenu)]);
+
   ctx.reply("Who shot the tile?", Markup.inlineKeyboard(buttons));
 });
 
-bot.action(/[a-zA-Z]+_\d{9}/, async (ctx) => {
+bot.action(/[a-zA-Z\s]+_(\d{9}|null)/, async (ctx) => {
   const [type, shooterId] = ctx.match.input.split("_");
   const { id } = await ctx.getChat();
   updateTally(type, shooterId, id);
-  return ctx.answerCbQuery("Tally updated"); // TODO: describe how tally is updated
+  return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
 });
 
 // View tally
