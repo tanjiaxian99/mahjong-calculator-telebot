@@ -31,7 +31,7 @@ const wrapper = (f) => {
 };
 
 const registerUser = async (chatId, name, username) => {
-  const users = db.collection("users");
+  const users = await db.collection("users");
   await users.updateOne(
     { chatId },
     { $set: { chatId, name, username } },
@@ -58,59 +58,89 @@ const createRoom = async (chatId, name, username) => {
   res = await res.json();
   const [passcode] = res.result.random.data;
 
-  const rooms = db.collection("rooms");
   const users = db.collection("users");
-  const players = {};
-  players[chatId] = { name, username, tally: 0 };
-
-  await rooms.insertOne({ passcode, hostId: chatId, players });
-  await users.updateOne({ chatId }, { $set: { passcode } });
+  const rooms = db.collection("rooms");
+  await users.updateOne(
+    { chatId },
+    { $set: { name, username, passcode, tally: 0 } },
+    { upsert: true }
+  );
+  await rooms.insertOne({ passcode, hostId: chatId });
   return passcode;
 };
 
 const joinRoom = async (chatId, name, username, passcode) => {
-  const rooms = db.collection("rooms");
   const users = db.collection("users");
+  const rooms = db.collection("rooms");
   const room = await rooms.findOne({ passcode });
   if (!room) {
     return { error: "No such room" };
   }
 
-  const players = room.players;
-  if (Object.keys(players).length >= 4) {
+  const count = await users.countDocuments({ passcode });
+  if (count >= 4) {
     return { error: "Room full" };
   }
 
-  if (players[chatId] != undefined) {
+  const user = await users.findOne({ chatId, passcode });
+  if (user != null) {
     return { error: "Player exists" };
   }
 
-  players[chatId] = { name, username, tally: 0 };
-  await rooms.updateOne({ passcode }, { $set: { players } });
-  await users.updateOne({ chatId }, { $set: { passcode } });
+  await users.updateOne(
+    { chatId },
+    { $set: { name, username, passcode, tally: 0 } },
+    { upsert: true }
+  );
   return { hostId: room.hostId };
 };
 
-const getRoomPlayers = async (hostId) => {
-  const rooms = db.collection("rooms");
-  const room = await rooms.findOne({ hostId });
-  return Object.keys(room.players).map((id) => parseInt(id));
+const getRoomPlayers = async (chatId) => {
+  const users = db.collection("users");
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  const players = await users.find({ passcode }).toArray();
+  return players;
 };
 
-const getTally = async (chatId) => {
-  const rooms = db.collection("rooms");
-  const users = db.collection("users");
+// const getTally = async (chatId) => {
+//   const players = await getRoomPlayers(chatId);
+//   players.forEach(player => ({}))
+//   Object.keys(players).forEach((playerId) =>
+//     totalTally.push(players[playerId])
+//   );
+//   return totalTally;
+// };
 
+const tenTwenty = {
+  oneTai: 0.1,
+  twoTai: 0.2,
+  threeTai: 0.4,
+  fourTai: 0.8,
+  fiveTai: 1.6,
+  kong: 0.1,
+  hiddenKong: 0.2,
+};
+const threeSixHalf = [2, 3, 5, 10, 20, 1, 1];
+const threeSix = [4, 7, 11, 20, 40, 3, 2];
+const bets = tenTwenty;
+
+const updateTally = async (type, shooterId, winnerId) => {
   const user = await users.findOne({ chatId });
   const passcode = user.passcode;
   const room = await rooms.findOne({ passcode });
   const players = room.players;
-  const totalTally = [];
 
-  Object.keys(players).forEach((playerId) =>
-    totalTally.push(players[playerId])
-  );
-  return totalTally;
+  if (type == "Kong") {
+    Object.keys(players).forEach((playerId) => {
+      if (parseInt(playerId) === shooterId) {
+        players[playerId].tally -= bets.kong * 3;
+      } else if (parseInt(playerId) === winnerId) {
+        players[playerId].tally += bets.kong * 3;
+      }
+    });
+  }
+  console.log(players);
 };
 
 const updateMenu = async (chatId, currentMenu) => {
@@ -159,7 +189,6 @@ module.exports = {
   createRoom: wrapper(createRoom),
   joinRoom: wrapper(joinRoom),
   getRoomPlayers: wrapper(getRoomPlayers),
-  getTally: wrapper(getTally),
   updateMenu: wrapper(updateMenu),
   previousMenu: wrapper(previousMenu),
 };

@@ -11,7 +11,10 @@ const {
 } = require("./db");
 require("dotenv").config();
 
-// TODO: app crashes if user sends password immediately
+// TODO: app crashes if user sends password immediately without sending /start
+// TODO: host settings => shooter or normal, money,
+// TODO: undo mistake
+// TODO: pressing "Back" means player leaves the room
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -30,9 +33,9 @@ bot.action("Start", (ctx) => startMenu(ctx));
 
 const startMenu = async (ctx) => {
   ctx.deleteMessage();
+
   const { id, first_name, username } = await ctx.getChat();
   await registerUser(id, first_name, username);
-
   ctx.reply(
     "What would you like to do today?",
     Markup.inlineKeyboard([
@@ -120,19 +123,43 @@ bot.action("StartGame", async (ctx) => {
   const { id } = await ctx.getChat();
   const playerIds = await getRoomPlayers(id);
 
-  playerIds.forEach((playerId) => {
+  playerIds.forEach((player) => {
     ctx.telegram.sendMessage(
-      playerId,
+      player.chatId,
       "The game has began! What would you like to do?",
       Markup.inlineKeyboard([
         [Markup.button.callback("Pay", "Pay")],
+        [Markup.button.callback("Undo payment", "UndoPayment")],
         [Markup.button.callback("View tally", "ViewTally")],
       ])
     );
   });
 });
 
-bot.action("Pay", async (ctx) => {});
+bot.action("Pay", async (ctx) => {
+  const previousMenu = await getPreviousMenu(ctx, 1);
+  ctx.reply(
+    "How much did you win by?",
+    Markup.inlineKeyboard([
+      [Markup.button.callback("1 tai", "1 tai")],
+      [Markup.button.callback("2 tai", "2 tai")],
+      [Markup.button.callback("3 tai", "3 tai")],
+      [Markup.button.callback("4 tai", "4 tai")],
+      [Markup.button.callback("5 tai", "5 tai")],
+      [Markup.button.callback("Bite / Kong", "Kong")],
+      [Markup.button.callback("Double bite / Hidden kong", "Hidden Kong")],
+      [Markup.button.callback("Back", previousMenu)],
+    ])
+  );
+});
+
+bot.action("Kong", async (ctx) => {
+  const { id } = await ctx.getChat();
+  const players = await getRoomPlayers(id);
+  console.log(players);
+  // await updateTally();
+  return ctx.answerCbQuery("Tally updated"); // TODO: describe how tally is updated
+});
 
 // View tally
 bot.action("ViewTally", async (ctx) => {
