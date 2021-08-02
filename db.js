@@ -103,15 +103,6 @@ const getRoomPlayers = async (chatId) => {
   return players;
 };
 
-// const getTally = async (chatId) => {
-//   const players = await getRoomPlayers(chatId);
-//   players.forEach(player => ({}))
-//   Object.keys(players).forEach((playerId) =>
-//     totalTally.push(players[playerId])
-//   );
-//   return totalTally;
-// };
-
 const tenTwenty = {
   oneTai: 0.1,
   twoTai: 0.2,
@@ -130,20 +121,52 @@ const updateTally = async (type, shooterId, winnerId) => {
   const rooms = db.collection("rooms");
   const players = await getRoomPlayers(winnerId);
 
-  if (type == "Kong") {
-    for (const player of players) {
-      if (player.chatId === parseInt(shooterId)) {
-        await users.updateOne(
-          { chatId: player.chatId },
-          { $inc: { tally: -bets.kong * 3 } }
-        );
-      } else if (player.chatId === winnerId) {
-        await users.updateOne(
-          { chatId: player.chatId },
-          { $inc: { tally: bets.kong * 3 } }
-        );
+  switch (type) {
+    case "Bite":
+      for (const player of players) {
+        if (player.chatId !== parseInt(winnerId)) {
+          await users.updateOne(
+            { chatId: player.chatId },
+            { $inc: { tally: -bets.kong } }
+          );
+        } else {
+          await users.updateOne(
+            { chatId: player.chatId },
+            { $inc: { tally: bets.kong * 3 } }
+          );
+        }
       }
-    }
+      break;
+    case "Double Bite / Hidden Kong":
+      for (const player of players) {
+        if (player.chatId !== parseInt(winnerId)) {
+          await users.updateOne(
+            { chatId: player.chatId },
+            { $inc: { tally: -bets.hiddenKong } }
+          );
+        } else {
+          await users.updateOne(
+            { chatId: player.chatId },
+            { $inc: { tally: bets.hiddenKong * 3 } }
+          );
+        }
+      }
+      break;
+    case "Kong":
+      for (const player of players) {
+        if (player.chatId === parseInt(shooterId)) {
+          await users.updateOne(
+            { chatId: player.chatId },
+            { $inc: { tally: -bets.kong * 3 } }
+          );
+        } else if (player.chatId === winnerId) {
+          await users.updateOne(
+            { chatId: player.chatId },
+            { $inc: { tally: bets.kong * 3 } }
+          );
+        }
+      }
+      break;
   }
 };
 

@@ -141,29 +141,42 @@ bot.action("Pay", async (ctx) => {
   ctx.reply(
     "How much did you win by?",
     Markup.inlineKeyboard([
-      [Markup.button.callback("1 tai", "1 tai")],
-      [Markup.button.callback("2 tai", "2 tai")],
-      [Markup.button.callback("3 tai", "3 tai")],
-      [Markup.button.callback("4 tai", "4 tai")],
-      [Markup.button.callback("5 tai", "5 tai")],
-      [Markup.button.callback("Bite / Kong", "Kong")],
-      [Markup.button.callback("Double bite / Hidden kong", "Hidden Kong")],
+      [Markup.button.callback("1 Tai", "Pay_1 Tai")],
+      [Markup.button.callback("2 Tai", "Pay_2 Tai")],
+      [Markup.button.callback("3 Tai", "Pay_3 Tai")],
+      [Markup.button.callback("4 Tai", "Pay_4 Tai")],
+      [Markup.button.callback("5 Tai", "Pay_5 Tai")],
+      [Markup.button.callback("Bite", "Pay_Bite")],
+      [Markup.button.callback("Kong", "Pay_Kong")],
+      [
+        Markup.button.callback(
+          "Double Bite / Hidden Kong",
+          "Pay_Double Bite / Hidden Kong"
+        ),
+      ],
       [Markup.button.callback("Back", previousMenu)],
     ])
   );
 });
 
-bot.action("Kong", async (ctx) => {
-  const previousMenu = await getPreviousMenu(ctx, 1);
+bot.action(/Pay_[a-zA-Z]+/, async (ctx) => {
+  const type = ctx.match.input.split("_")[1];
   const { id } = await ctx.getChat();
   const players = await getRoomPlayers(id);
 
+  // Bite and Hidden Bite / Hidden Kong reduces everyones winnings immediately
+  if (type === "Bite" || type === "Double Bite / Hidden Kong") {
+    updateTally(type, null, id);
+    return ctx.answerCbQuery(`Tally updated with ${type} winnings`); // TODO: describe how tally is updated
+  }
+
+  const previousMenu = await getPreviousMenu(ctx, 1);
   const buttons = players.reduce((accumulator, player) => {
     if (player.chatId !== id) {
       accumulator.push([
         Markup.button.callback(
           `${player.name} (${player.username})`,
-          `Kong_${player.chatId}`
+          `${type}_${player.chatId}`
         ),
       ]);
     }
