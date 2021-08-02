@@ -133,7 +133,6 @@ const bets = tenTwenty;
 
 const updateTally = async (type, shooterId, winnerId) => {
   const users = db.collection("users");
-  const rooms = db.collection("rooms");
   const players = await getRoomPlayers(winnerId);
 
   switch (type) {
@@ -150,51 +149,57 @@ const updateTally = async (type, shooterId, winnerId) => {
     case "Zimo 5 Tai":
       break;
     case "Bite":
-      for (const player of players) {
-        if (player.chatId !== parseInt(winnerId)) {
-          await users.updateOne(
-            { chatId: player.chatId },
-            { $inc: { tally: -bets.kong.shooter } }
-          );
-        } else {
-          await users.updateOne(
-            { chatId: player.chatId },
-            { $inc: { tally: bets.kong.shooter * 3 } }
-          );
-        }
-      }
+      updateZimoTally(winnerId, bets.kong.shooter, bets.kong.shooter * 3);
       break;
     case "Double Bite":
     case "Zimo Kong":
-      for (const player of players) {
-        if (player.chatId !== parseInt(winnerId)) {
-          await users.updateOne(
-            { chatId: player.chatId },
-            { $inc: { tally: -bets.kong.zimo } }
-          );
-        } else {
-          await users.updateOne(
-            { chatId: player.chatId },
-            { $inc: { tally: bets.kong.zimo * 3 } }
-          );
-        }
-      }
+      updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
       break;
     case "Kong":
-      for (const player of players) {
-        if (player.chatId === parseInt(shooterId)) {
-          await users.updateOne(
-            { chatId: player.chatId },
-            { $inc: { tally: -bets.kong.shooter * 3 } }
-          );
-        } else if (player.chatId === winnerId) {
-          await users.updateOne(
-            { chatId: player.chatId },
-            { $inc: { tally: bets.kong.shooter * 3 } }
-          );
-        }
-      }
-      break;
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.kong.shooter * 3,
+        bets.kong.shooter * 3
+      );
+  }
+};
+
+const updateShooterTally = async (shooterId, winnerId, loses, wins) => {
+  const users = db.collection("users");
+  const players = await getRoomPlayers(winnerId);
+
+  for (const player of players) {
+    if (player.chatId === parseInt(shooterId)) {
+      await users.updateOne(
+        { chatId: player.chatId },
+        { $inc: { tally: -loses } }
+      );
+    } else if (player.chatId === winnerId) {
+      await users.updateOne(
+        { chatId: player.chatId },
+        { $inc: { tally: wins } }
+      );
+    }
+  }
+};
+
+const updateZimoTally = async (winnerId, loses, wins) => {
+  const users = db.collection("users");
+  const players = await getRoomPlayers(winnerId);
+
+  for (const player of players) {
+    if (player.chatId !== parseInt(winnerId)) {
+      await users.updateOne(
+        { chatId: player.chatId },
+        { $inc: { tally: -loses } }
+      );
+    } else {
+      await users.updateOne(
+        { chatId: player.chatId },
+        { $inc: { tally: wins } }
+      );
+    }
   }
 };
 
