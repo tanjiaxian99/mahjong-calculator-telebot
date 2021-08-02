@@ -126,21 +126,25 @@ const threeSix = [4, 7, 11, 20, 40, 3, 2];
 const bets = tenTwenty;
 
 const updateTally = async (type, shooterId, winnerId) => {
-  const user = await users.findOne({ chatId });
-  const passcode = user.passcode;
-  const room = await rooms.findOne({ passcode });
-  const players = room.players;
+  const users = db.collection("users");
+  const rooms = db.collection("rooms");
+  const players = await getRoomPlayers(winnerId);
 
   if (type == "Kong") {
-    Object.keys(players).forEach((playerId) => {
-      if (parseInt(playerId) === shooterId) {
-        players[playerId].tally -= bets.kong * 3;
-      } else if (parseInt(playerId) === winnerId) {
-        players[playerId].tally += bets.kong * 3;
+    for (const player of players) {
+      if (player.chatId === parseInt(shooterId)) {
+        await users.updateOne(
+          { chatId: player.chatId },
+          { $inc: { tally: -bets.kong * 3 } }
+        );
+      } else if (player.chatId === winnerId) {
+        await users.updateOne(
+          { chatId: player.chatId },
+          { $inc: { tally: bets.kong * 3 } }
+        );
       }
-    });
+    }
   }
-  console.log(players);
 };
 
 const updateMenu = async (chatId, currentMenu) => {
@@ -189,6 +193,7 @@ module.exports = {
   createRoom: wrapper(createRoom),
   joinRoom: wrapper(joinRoom),
   getRoomPlayers: wrapper(getRoomPlayers),
+  updateTally: wrapper(updateTally),
   updateMenu: wrapper(updateMenu),
   previousMenu: wrapper(previousMenu),
 };

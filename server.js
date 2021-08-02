@@ -5,7 +5,7 @@ const {
   createRoom,
   joinRoom,
   getRoomPlayers,
-  getTally,
+  updateTally,
   updateMenu,
   previousMenu,
 } = require("./db");
@@ -129,8 +129,8 @@ bot.action("StartGame", async (ctx) => {
       "The game has began! What would you like to do?",
       Markup.inlineKeyboard([
         [Markup.button.callback("Pay", "Pay")],
-        [Markup.button.callback("Undo payment", "UndoPayment")],
         [Markup.button.callback("View tally", "ViewTally")],
+        [Markup.button.callback("Undo payment", "UndoPayment")],
       ])
     );
   });
@@ -154,10 +154,29 @@ bot.action("Pay", async (ctx) => {
 });
 
 bot.action("Kong", async (ctx) => {
+  const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
   const players = await getRoomPlayers(id);
-  console.log(players);
-  // await updateTally();
+
+  const buttons = players.reduce((accumulator, player) => {
+    if (player.chatId !== id) {
+      accumulator.push([
+        Markup.button.callback(
+          `${player.name} (${player.username})`,
+          `Kong_${player.chatId}`
+        ),
+      ]);
+    }
+    return accumulator;
+  }, []);
+  buttons.push([Markup.button.callback("Back", previousMenu)]);
+  ctx.reply("Who shot the tile?", Markup.inlineKeyboard(buttons));
+});
+
+bot.action(/[a-zA-Z]+_\d{9}/, async (ctx) => {
+  const [type, shooterId] = ctx.match.input.split("_");
+  const { id } = await ctx.getChat();
+  updateTally(type, shooterId, id);
   return ctx.answerCbQuery("Tally updated"); // TODO: describe how tally is updated
 });
 
@@ -165,13 +184,15 @@ bot.action("Kong", async (ctx) => {
 bot.action("ViewTally", async (ctx) => {
   const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
-  const totalTally = await getTally(id);
+  const players = await getRoomPlayers(id);
 
   ctx.replyWithHTML(
-    totalTally.reduce(
-      (accumulator, currentValue) =>
+    players.reduce(
+      (accumulator, player) =>
         accumulator +
-        `<b>${currentValue.name}</b> (${currentValue.username}): $${currentValue.tally}\n`,
+        `<b>${player.name}</b> (${player.username}): $${player.tally.toFixed(
+          2
+        )}\n`,
       ""
     ),
     Markup.inlineKeyboard([[Markup.button.callback("Back", previousMenu)]])
