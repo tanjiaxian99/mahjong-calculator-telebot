@@ -69,6 +69,17 @@ const createRoom = async (chatId, name, username) => {
   return passcode;
 };
 
+const updateJoinRoomChatId = async (chatId, messageId) => {
+  const users = db.collection("users");
+  await users.updateOne({ chatId }, { $set: { messageId } });
+};
+
+const getJoinRoomChatId = async (chatId) => {
+  const users = db.collection("users");
+  const user = await users.findOne({ chatId });
+  return user.messageId;
+};
+
 const joinRoom = async (chatId, name, username, passcode) => {
   const users = db.collection("users");
   const rooms = db.collection("rooms");
@@ -94,8 +105,7 @@ const joinRoom = async (chatId, name, username, passcode) => {
 
   await users.updateOne(
     { chatId },
-    { $set: { name, username, passcode, tally: 0 } },
-    { upsert: true }
+    { $set: { name, username, passcode, tally: 0 } }
   );
   return { hostId: room.hostId };
 };
@@ -327,6 +337,8 @@ const previousMenu = async (chatId, skips) => {
 module.exports = {
   registerUser: wrapper(registerUser),
   createRoom: wrapper(createRoom),
+  updateJoinRoomChatId: wrapper(updateJoinRoomChatId),
+  getJoinRoomChatId: wrapper(getJoinRoomChatId),
   joinRoom: wrapper(joinRoom),
   getRoomPlayers: wrapper(getRoomPlayers),
   updateTally: wrapper(updateTally),

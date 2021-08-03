@@ -3,6 +3,8 @@ const { oneLine } = require("common-tags");
 const {
   registerUser,
   createRoom,
+  updateJoinRoomChatId,
+  getJoinRoomChatId,
   joinRoom,
   getRoomPlayers,
   updateTally,
@@ -64,17 +66,20 @@ bot.action("CreateRoom", async (ctx) => {
 
 bot.action("JoinRoom", async (ctx) => {
   const previousMenu = await getPreviousMenu(ctx, 1);
-  ctx.reply(
+  const { id } = await ctx.getChat();
+  const { message_id } = await ctx.reply(
     "Please key in the 6-letter passcode below.", // TODO: delete this message
     Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
+  await updateJoinRoomChatId(id, message_id);
 });
 
 // Passcode
 bot.hears(/^[a-z]{6}$/, async (ctx) => {
-  // TODO can't join another room if the player is already in a room
-
   const { id, first_name, username } = await ctx.getChat();
+  const messageId = await getJoinRoomChatId(id);
+  console.log(messageId);
+  ctx.deleteMessage(messageId);
   const passcode = ctx.match.input;
   const response = await joinRoom(id, first_name, username, passcode);
 
@@ -102,7 +107,7 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
     );
   } else {
     ctx.reply(oneLine`You have succesfully joined the room! Please wait for the
-      host to start the game.`);
+      host to start the game. To join another room instead, send /start`);
     ctx.telegram.sendMessage(
       response.hostId,
       `${first_name} has joined the room.`,
