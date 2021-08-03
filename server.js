@@ -11,7 +11,6 @@ const {
 } = require("./db");
 require("dotenv").config();
 
-// TODO: app crashes if user sends password immediately without sending /start
 // TODO: host settings => shooter or normal, money,
 // TODO: undo mistake
 // TODO: pressing "Back" means player leaves the room
@@ -75,11 +74,16 @@ bot.action("JoinRoom", async (ctx) => {
 bot.hears(/^[a-z]{6}$/, async (ctx) => {
   // TODO can't join another room if the player is already in a room
 
-  const previousMenu = await getPreviousMenu(ctx, 1);
   const { id, first_name, username } = await ctx.getChat();
-  //   const { id, first_name } = { id: 1001, first_name: "test" };
   const passcode = ctx.match.input;
   const response = await joinRoom(id, first_name, username, passcode);
+
+  if (response.error === "Unregistered user") {
+    ctx.reply("Send /start first before entering the passcode.");
+    return;
+  }
+
+  const previousMenu = await getPreviousMenu(ctx, 1);
 
   if (response.error === "No such room") {
     ctx.reply(

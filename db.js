@@ -82,8 +82,13 @@ const joinRoom = async (chatId, name, username, passcode) => {
     return { error: "Room full" };
   }
 
-  const user = await users.findOne({ chatId, passcode });
-  if (user != null) {
+  let user = await users.findOne({ chatId });
+  if (user === null) {
+    return { error: "Unregistered user" };
+  }
+
+  user = await users.findOne({ chatId, passcode });
+  if (user !== null) {
     return { error: "Player exists" };
   }
 
