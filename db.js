@@ -84,6 +84,12 @@ const deleteMessageIdHistory = async (chatId) => {
 const joinRoom = async (chatId, name, username, passcode) => {
   const users = db.collection("users");
   const rooms = db.collection("rooms");
+
+  let user = await users.findOne({ chatId });
+  if (user === null) {
+    return { error: "Unregistered user" };
+  }
+
   const room = await rooms.findOne({ passcode });
   if (!room) {
     return { error: "No such room" };
@@ -92,11 +98,6 @@ const joinRoom = async (chatId, name, username, passcode) => {
   const count = await users.countDocuments({ passcode });
   if (count >= 4) {
     return { error: "Room full" };
-  }
-
-  let user = await users.findOne({ chatId });
-  if (user === null) {
-    return { error: "Unregistered user" };
   }
 
   user = await users.findOne({ chatId, passcode });

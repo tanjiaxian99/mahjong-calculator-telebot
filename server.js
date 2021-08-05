@@ -17,10 +17,7 @@ require("dotenv").config();
 
 // TODO: host settings => shooter or normal, money,
 // TODO: undo mistake
-// TODO: pressing "Back" means player leaves the room
-// TODO: enter room by keying password without sending /start
 // TODO: unable to press /start once /start has been pressed
-// TODO: entering password when not at password menu
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -80,7 +77,7 @@ bot.action("JoinRoom", async (ctx) => {
   const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
   const { message_id } = await ctx.reply(
-    "Please key in the 6-letter passcode below.", // TODO: delete this message
+    "Please key in the 6-letter passcode below.",
     Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
   await updateMessageIdHistory(id, message_id);
@@ -90,9 +87,6 @@ bot.action("JoinRoom", async (ctx) => {
 bot.hears(/^[a-z]{6}$/, async (ctx) => {
   ctx.deleteMessage();
   const { id, first_name, username } = await ctx.getChat();
-  const messageIdHistory = await deleteMessageIdHistory(id);
-
-  messageIdHistory.forEach((messageId) => ctx.deleteMessage(messageId));
   const passcode = ctx.match.input;
   const response = await joinRoom(id, first_name, username, passcode);
 
@@ -101,6 +95,8 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
     return;
   }
 
+  const messageIdHistory = await deleteMessageIdHistory(id);
+  messageIdHistory.forEach((messageId) => ctx.deleteMessage(messageId));
   const previousMenu = await getPreviousMenu(ctx, 1);
 
   if (response.error === "No such room") {
