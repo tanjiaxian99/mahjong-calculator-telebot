@@ -69,15 +69,16 @@ const createRoom = async (chatId, name, username) => {
   return passcode;
 };
 
-const updateJoinRoomChatId = async (chatId, messageId) => {
+const updateMessageIdHistory = async (chatId, messageId) => {
   const users = db.collection("users");
-  await users.updateOne({ chatId }, { $set: { messageId } });
+  await users.updateOne({ chatId }, { $push: { messageIdHistory: messageId } });
 };
 
-const getJoinRoomChatId = async (chatId) => {
+const deleteMessageIdHistory = async (chatId) => {
   const users = db.collection("users");
   const user = await users.findOne({ chatId });
-  return user.messageId;
+  await users.updateOne({ chatId }, { $unset: { messageIdHistory: "" } });
+  return user.messageIdHistory;
 };
 
 const joinRoom = async (chatId, name, username, passcode) => {
@@ -108,6 +109,22 @@ const joinRoom = async (chatId, name, username, passcode) => {
     { $set: { name, username, passcode, tally: 0 } }
   );
   return { hostId: room.hostId };
+};
+
+const leaveRoom = async (chatId) => {
+  const users = db.collection("users");
+  const rooms = db.collection("rooms");
+  await users.updateOne({ chatId }, { $unset: { passcode: "" } });
+  await rooms.deleteOne({ hostId: chatId });
+};
+
+const getHostId = async (chatId) => {
+  const users = db.collection("users");
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  const rooms = db.collection("rooms");
+  const room = await rooms.findOne({ passcode });
+  return room.hostId;
 };
 
 const getRoomPlayers = async (chatId) => {
@@ -337,9 +354,11 @@ const previousMenu = async (chatId, skips) => {
 module.exports = {
   registerUser: wrapper(registerUser),
   createRoom: wrapper(createRoom),
-  updateJoinRoomChatId: wrapper(updateJoinRoomChatId),
-  getJoinRoomChatId: wrapper(getJoinRoomChatId),
+  updateMessageIdHistory: wrapper(updateMessageIdHistory),
+  deleteMessageIdHistory: wrapper(deleteMessageIdHistory),
   joinRoom: wrapper(joinRoom),
+  leaveRoom: wrapper(leaveRoom),
+  getHostId: wrapper(getHostId),
   getRoomPlayers: wrapper(getRoomPlayers),
   updateTally: wrapper(updateTally),
   updateMenu: wrapper(updateMenu),

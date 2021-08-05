@@ -3,9 +3,11 @@ const { oneLine } = require("common-tags");
 const {
   registerUser,
   createRoom,
-  updateJoinRoomChatId,
-  getJoinRoomChatId,
+  updateMessageIdHistory,
+  deleteMessageIdHistory,
   joinRoom,
+  leaveRoom,
+  getHostId,
   getRoomPlayers,
   updateTally,
   updateMenu,
@@ -16,11 +18,13 @@ require("dotenv").config();
 // TODO: host settings => shooter or normal, money,
 // TODO: undo mistake
 // TODO: pressing "Back" means player leaves the room
+// TODO: enter room by keying password without sending /start
+// TODO: unable to press /start once /start has been pressed
+// TODO: entering password when not at password menu
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
   try {
-    ctx.deleteMessage();
     const { id } = await ctx.getChat();
     await updateMenu(id, ctx.match.input);
     return await previousMenu(id, skips);
@@ -33,9 +37,12 @@ bot.start((ctx) => startMenu(ctx));
 bot.action("Start", (ctx) => startMenu(ctx));
 
 const startMenu = async (ctx) => {
-  ctx.deleteMessage();
-
   const { id, first_name, username } = await ctx.getChat();
+  const messageIdHistory = await deleteMessageIdHistory(id);
+  if (messageIdHistory != null) {
+    messageIdHistory.forEach((messageId) => ctx.deleteMessage(messageId));
+  }
+
   await registerUser(id, first_name, username);
   ctx.reply(
     "What would you like to do today?",
@@ -48,38 +55,44 @@ const startMenu = async (ctx) => {
 };
 
 bot.action("CreateRoom", async (ctx) => {
+  ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
-  const { message_id } = await ctx.reply("Creating room...");
+  let { message_id } = await ctx.reply("Creating room...");
 
   const { id, first_name, username } = await ctx.getChat();
   const passcode = await createRoom(id, first_name, username);
   ctx.deleteMessage(message_id);
 
-  await ctx.replyWithHTML(
+  ({ message_id } = await ctx.replyWithHTML(
     oneLine`
     Room has been created! Share the passcode with your friends for them to
     join the room. The passcode for the room is:
     <b>${passcode}</b>`,
-    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
-  );
+    Markup.inlineKeyboard([
+      [Markup.button.callback("❌ Delete room", "DeleteRoom")],
+    ])
+  ));
+  updateMessageIdHistory(id, message_id);
 });
 
 bot.action("JoinRoom", async (ctx) => {
+  ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
   const { message_id } = await ctx.reply(
     "Please key in the 6-letter passcode below.", // TODO: delete this message
     Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
-  await updateJoinRoomChatId(id, message_id);
+  await updateMessageIdHistory(id, message_id);
 });
 
 // Passcode
 bot.hears(/^[a-z]{6}$/, async (ctx) => {
+  ctx.deleteMessage();
   const { id, first_name, username } = await ctx.getChat();
-  const messageId = await getJoinRoomChatId(id);
-  console.log(messageId);
-  ctx.deleteMessage(messageId);
+  const messageIdHistory = await deleteMessageIdHistory(id);
+
+  messageIdHistory.forEach((messageId) => ctx.deleteMessage(messageId));
   const passcode = ctx.match.input;
   const response = await joinRoom(id, first_name, username, passcode);
 
@@ -103,53 +116,147 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
   } else if (response.error === "Player exists") {
     ctx.reply(
       "You have already joined the room.",
-      Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
+      Markup.inlineKeyboard([
+        [Markup.button.callback("Leave room", "LeaveRoom")],
+      ])
     );
   } else {
-    ctx.reply(oneLine`You have succesfully joined the room! Please wait for the
-      host to start the game. To join another room instead, send /start`);
-    ctx.telegram.sendMessage(
+    let { message_id } = await ctx.reply(
+      oneLine`You have succesfully joined the room! Please wait for the
+      host to start the game.`,
+      Markup.inlineKeyboard([
+        [Markup.button.callback("Leave room", "LeaveRoom")],
+      ])
+    );
+    await updateMessageIdHistory(id, message_id);
+
+    ({ message_id } = await ctx.telegram.sendMessage(
       response.hostId,
       `${first_name} has joined the room.`,
       Markup.inlineKeyboard([
         [Markup.button.callback("Start game", "StartGame")], // TODO only show when there are 4 players
-        [Markup.button.callback("🔙 Back", previousMenu)],
       ])
-    );
+    ));
+    await updateMessageIdHistory(response.hostId, message_id);
   }
 });
 
-// Passcode of invalid format
-bot.on("text", (ctx) => {
-  ctx.reply(
-    "Invalid passcode format. Passcode should consists of 6 lower-case letters."
+bot.action("LeaveRoom", async (ctx) => {
+  const { id, first_name } = await ctx.getChat();
+  const hostId = await getHostId(id);
+  await leaveRoom(id);
+
+  const { message_id } = await ctx.telegram.sendMessage(
+    hostId,
+    `${first_name} has left the room.`
   );
+  updateMessageIdHistory(hostId, message_id);
+  await startMenu(ctx);
+  return;
 });
 
-// Start game
-bot.action("StartGame", async (ctx) => {
-  await getPreviousMenu(ctx, 1);
-  const { id } = await ctx.getChat();
-  const playerIds = await getRoomPlayers(id);
+bot.action("DeleteRoom", async (ctx) => {
+  const { id, first_name } = await ctx.getChat();
+  const hostId = await getHostId(id);
+  const players = await getRoomPlayers(id);
+  await leaveRoom(id);
 
-  playerIds.forEach((player) => {
-    // TODO: sent to each player when player presses back
-    ctx.telegram.sendMessage(
+  for (const player of players) {
+    if (player.chatId !== hostId) {
+      await leaveRoom(player.chatId);
+      const messageIdHistory = await deleteMessageIdHistory(player.chatId);
+      messageIdHistory.forEach((messageId) => {
+        ctx.telegram.deleteMessage(player.chatId, messageId);
+      });
+
+      const { message_id } = await ctx.telegram.sendMessage(
+        player.chatId,
+        `${first_name} has deleted the room.`,
+        Markup.inlineKeyboard([
+          [Markup.button.callback("🔙 Back to main menu", "Start")],
+        ])
+      );
+      updateMessageIdHistory(player.chatId, message_id);
+    }
+  }
+
+  const messageIdHistory = await deleteMessageIdHistory(id);
+  messageIdHistory.forEach((messageId) => {
+    ctx.deleteMessage(messageId);
+  });
+  await startMenu(ctx);
+});
+
+// Invalid texts
+bot.on("text", (ctx) => {
+  ctx.reply("Unrecognised text");
+});
+
+// The host starts the game
+bot.action("StartGame", async (ctx) => {
+  const { id } = await ctx.getChat();
+  const hostId = await getHostId(id);
+  const players = await getRoomPlayers(id);
+
+  for (const player of players) {
+    const messageIdHistory = await deleteMessageIdHistory(player.chatId);
+    messageIdHistory.forEach((messageId) =>
+      ctx.telegram.deleteMessage(player.chatId, messageId)
+    );
+
+    const buttons = [
+      [Markup.button.callback("Pay", "Pay")],
+      [Markup.button.callback("View tally", "ViewTally")],
+      [Markup.button.callback("Undo payment", "UndoPayment")],
+    ];
+
+    if (player.chatId === hostId) {
+      buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
+    }
+
+    const { message_id } = await ctx.telegram.sendMessage(
       player.chatId,
       "The game has began! What would you like to do?",
-      Markup.inlineKeyboard([
-        [Markup.button.callback("Pay", "Pay")],
-        [Markup.button.callback("View tally", "ViewTally")],
-        [Markup.button.callback("Undo payment", "UndoPayment")],
-      ])
+      Markup.inlineKeyboard(buttons)
     );
-  });
+
+    updateMenu(player.chatId, "Game");
+    updateMessageIdHistory(player.chatId, message_id);
+  }
+});
+
+bot.action("Game", async (ctx) => {
+  ctx.deleteMessage();
+  await getPreviousMenu(ctx, 1);
+  const { id } = await ctx.getChat();
+  const hostId = await getHostId(id);
+
+  const buttons = [
+    [Markup.button.callback("Pay", "Pay")],
+    [Markup.button.callback("View tally", "ViewTally")],
+    [Markup.button.callback("Undo payment", "UndoPayment")],
+  ];
+
+  if (id === hostId) {
+    buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
+  }
+
+  const { message_id } = await ctx.reply(
+    "The game has began! What would you like to do?",
+    Markup.inlineKeyboard(buttons)
+  );
+
+  await deleteMessageIdHistory(id);
+  await updateMessageIdHistory(id, message_id);
 });
 
 // Pay menu
 bot.action("Pay", async (ctx) => {
+  ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
-  ctx.reply(
+  const { id } = await ctx.getChat();
+
+  const { message_id } = await ctx.reply(
     "How much did you win by?",
     Markup.inlineKeyboard([
       [Markup.button.callback("1️⃣ Tai", "Pay_1 Tai")],
@@ -164,6 +271,9 @@ bot.action("Pay", async (ctx) => {
       [Markup.button.callback("🔙 Back", previousMenu)],
     ])
   );
+
+  await deleteMessageIdHistory(id);
+  await updateMessageIdHistory(id, message_id);
 });
 
 bot.action(/Pay_.+/, async (ctx) => {
@@ -177,6 +287,7 @@ bot.action(/Pay_.+/, async (ctx) => {
     return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
   }
 
+  ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
   const buttons = players.reduce((accumulator, player) => {
     if (player.chatId !== id) {
@@ -193,10 +304,15 @@ bot.action(/Pay_.+/, async (ctx) => {
   if (type !== "Matching Flowers") {
     buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
   }
-
   buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
 
-  ctx.reply("Who shot the tile?", Markup.inlineKeyboard(buttons));
+  const { message_id } = await ctx.reply(
+    "Who shot the tile?",
+    Markup.inlineKeyboard(buttons)
+  );
+
+  await deleteMessageIdHistory(id);
+  await updateMessageIdHistory(id, message_id);
 });
 
 bot.action(/[a-zA-Z\s]+_(\d{9}|null)/, async (ctx) => {
@@ -208,11 +324,12 @@ bot.action(/[a-zA-Z\s]+_(\d{9}|null)/, async (ctx) => {
 
 // View tally
 bot.action("ViewTally", async (ctx) => {
+  ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
   const players = await getRoomPlayers(id);
 
-  ctx.replyWithHTML(
+  const { message_id } = await ctx.replyWithHTML(
     players.reduce(
       (accumulator, player) =>
         accumulator +
@@ -223,6 +340,9 @@ bot.action("ViewTally", async (ctx) => {
     ),
     Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
+
+  await deleteMessageIdHistory(id);
+  await updateMessageIdHistory(id, message_id);
 });
 
 bot.launch();
