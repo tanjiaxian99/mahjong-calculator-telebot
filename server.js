@@ -17,7 +17,6 @@ require("dotenv").config();
 
 // TODO: host settings => shooter or normal, money,
 // TODO: undo mistake
-// TODO: unable to press /start once /start has been pressed
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -36,7 +35,7 @@ bot.action("Start", (ctx) => startMenu(ctx));
 const startMenu = async (ctx) => {
   const { id, first_name, username } = await ctx.getChat();
   const messageIdHistory = await deleteMessageIdHistory(id);
-  if (messageIdHistory != null) {
+  if (messageIdHistory !== undefined) {
     messageIdHistory.forEach((messageId) => ctx.deleteMessage(messageId));
   }
 
@@ -207,6 +206,7 @@ bot.action("StartGame", async (ctx) => {
     ];
 
     if (player.chatId === hostId) {
+      buttons.push([Markup.button.callback("⚙️ Settings", "Settings")]);
       buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
     }
 
@@ -340,6 +340,9 @@ bot.action("ViewTally", async (ctx) => {
   await deleteMessageIdHistory(id);
   await updateMessageIdHistory(id, message_id);
 });
+
+// Settings
+bot.action("Settings", async (ctx) => {});
 
 bot.launch();
 

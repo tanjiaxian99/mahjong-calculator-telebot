@@ -77,6 +77,10 @@ const updateMessageIdHistory = async (chatId, messageId) => {
 const deleteMessageIdHistory = async (chatId) => {
   const users = db.collection("users");
   const user = await users.findOne({ chatId });
+  if (user === null) {
+    return undefined;
+  }
+
   await users.updateOne({ chatId }, { $unset: { messageIdHistory: "" } });
   return user.messageIdHistory;
 };
