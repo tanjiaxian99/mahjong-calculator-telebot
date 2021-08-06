@@ -142,27 +142,27 @@ const getRoomPlayers = async (chatId) => {
 
 const tenTwenty = {
   oneTai: {
-    shooter: 0.1,
+    base: 0.1,
     zimo: 0.2,
   },
   twoTai: {
-    shooter: 0.2,
+    base: 0.2,
     zimo: 0.4,
   },
   threeTai: {
-    shooter: 0.4,
+    base: 0.4,
     zimo: 0.8,
   },
   fourTai: {
-    shooter: 0.8,
+    base: 0.8,
     zimo: 1.6,
   },
   fiveTai: {
-    shooter: 1.6,
+    base: 1.6,
     zimo: 3.2,
   },
   kong: {
-    shooter: 0.1,
+    base: 0.1,
     zimo: 0.2,
   },
 };
@@ -171,6 +171,7 @@ const bets = tenTwenty;
 const updateTally = async (type, shooterId, winnerId) => {
   const users = db.collection("users");
   const players = await getRoomPlayers(winnerId);
+  const isShooter = await getIsShooter(winnerId);
 
   // Resets tally for testing purposes
   for (const player of players) {
@@ -179,49 +180,89 @@ const updateTally = async (type, shooterId, winnerId) => {
 
   switch (type) {
     case "1 Tai":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        bets.twoTai.shooter * 2 + bets.oneTai.zimo,
-        0,
-        bets.oneTai.shooter * 2 + bets.oneTai.zimo
-      );
+      isShooter
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.oneTai.base * 2 + bets.oneTai.zimo,
+            0,
+            bets.oneTai.base * 2 + bets.oneTai.zimo
+          )
+        : updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.oneTai.zimo,
+            bets.oneTai.base,
+            bets.oneTai.base * 2 + bets.oneTai.zimo
+          );
       break;
     case "2 Tai":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        bets.twoTai.shooter * 2 + bets.twoTai.zimo,
-        0,
-        bets.twoTai.shooter * 2 + bets.twoTai.zimo
-      );
+      isShooter
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.twoTai.base * 2 + bets.twoTai.zimo,
+            0,
+            bets.twoTai.base * 2 + bets.twoTai.zimo
+          )
+        : updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.twoTai.zimo,
+            bets.twoTai.base,
+            bets.twoTai.base * 2 + bets.twoTai.zimo
+          );
       break;
     case "3 Tai":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        bets.threeTai.shooter * 2 + bets.threeTai.zimo,
-        0,
-        bets.threeTai.shooter * 2 + bets.threeTai.zimo
-      );
+      isShooter
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.threeTai.base * 2 + bets.threeTai.zimo,
+            0,
+            bets.threeTai.base * 2 + bets.threeTai.zimo
+          )
+        : updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.threeTai.zimo,
+            bets.threeTai.base,
+            bets.threeTai.base * 2 + bets.threeTai.zimo
+          );
       break;
     case "4 Tai":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        bets.fourTai.shooter * 2 + bets.fourTai.zimo,
-        0,
-        bets.fourTai.shooter * 2 + bets.fourTai.zimo
-      );
+      isShooter
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.fourTai.base * 2 + bets.fourTai.zimo,
+            0,
+            bets.fourTai.base * 2 + bets.fourTai.zimo
+          )
+        : updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.fourTai.zimo,
+            bets.fourTai.base,
+            bets.fourTai.base * 2 + bets.fourTai.zimo
+          );
       break;
     case "5 Tai":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        bets.fiveTai.shooter * 2 + bets.fiveTai.zimo,
-        0,
-        bets.fiveTai.shooter * 2 + bets.fiveTai.zimo
-      );
+      isShooter
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.fiveTai.base * 2 + bets.fiveTai.zimo,
+            0,
+            bets.fiveTai.base * 2 + bets.fiveTai.zimo
+          )
+        : updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.fiveTai.zimo,
+            bets.fiveTai.base,
+            bets.fiveTai.base * 2 + bets.fiveTai.zimo
+          );
       break;
     case "Zimo 1 Tai":
       updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
@@ -239,19 +280,27 @@ const updateTally = async (type, shooterId, winnerId) => {
       updateZimoTally(winnerId, bets.fiveTai.zimo, bets.fiveTai.zimo * 3);
       break;
     case "Bite":
-      updateZimoTally(winnerId, bets.kong.shooter, bets.kong.shooter * 3);
+      updateZimoTally(winnerId, bets.kong.base, bets.kong.base * 3);
       break;
     case "Double Bite":
       updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
       break;
     case "Kong":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        bets.kong.shooter * 3,
-        0,
-        bets.kong.shooter * 3
-      );
+      isShooter
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.kong.base * 3,
+            0,
+            bets.kong.base * 3
+          )
+        : updateShooterTally(
+            shooterId,
+            winnerId,
+            bets.kong.base,
+            bets.kong.base,
+            bets.kong.base * 3
+          );
     case "Zimo Kong":
       updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
       break;
@@ -259,11 +308,28 @@ const updateTally = async (type, shooterId, winnerId) => {
       updateShooterTally(
         shooterId,
         winnerId,
-        bets.kong.shooter,
+        bets.kong.base,
         0,
-        bets.kong.shooter
+        bets.kong.base
+      );
+    case "Hidden Matching Flowers":
+      updateShooterTally(
+        shooterId,
+        winnerId,
+        bets.kong.zimo,
+        0,
+        bets.kong.zimo
       );
   }
+};
+
+const getIsShooter = async (chatId) => {
+  const users = db.collection("users");
+  const rooms = db.collection("rooms");
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  const room = rooms.findOne({ passcode });
+  return room.isShooter;
 };
 
 const updateIsShooter = async (hostId, isShooter) => {
@@ -295,7 +361,7 @@ const updateShooterTally = async (
     } else {
       await users.updateOne(
         { chatId: player.chatId },
-        { $inc: { tally: othersLoss } }
+        { $inc: { tally: -othersLoss } }
       );
     }
   }

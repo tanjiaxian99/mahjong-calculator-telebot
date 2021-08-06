@@ -18,6 +18,7 @@ require("dotenv").config();
 
 // TODO: host settings => shooter or normal, money,
 // TODO: undo mistake
+// TODO: refresh button for view tally
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -265,6 +266,12 @@ bot.action("Pay", async (ctx) => {
       [Markup.button.callback("Double Bite", "Pay_Double Bite")],
       [Markup.button.callback("Kong", "Pay_Kong")],
       [Markup.button.callback("Matching Flowers", "Pay_Matching Flowers")],
+      [
+        Markup.button.callback(
+          "Hidden Matching Flowers",
+          "Pay_Hidden Matching Flowers"
+        ),
+      ],
       [Markup.button.callback("🔙 Back", previousMenu)],
     ])
   );
@@ -378,7 +385,7 @@ bot.action(/true|false/, async (ctx) => {
   updateIsShooter(id, isShooter);
 
   return ctx.answerCbQuery(
-    `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode`
+    `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode` // TODO show tick icon beside the current setting
   );
 });
 
