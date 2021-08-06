@@ -65,7 +65,7 @@ const createRoom = async (chatId, name, username) => {
     { $set: { name, username, passcode, tally: 0 } },
     { upsert: true }
   );
-  await rooms.insertOne({ passcode, hostId: chatId });
+  await rooms.insertOne({ passcode, hostId: chatId, isShooter: true });
   return passcode;
 };
 
@@ -266,6 +266,11 @@ const updateTally = async (type, shooterId, winnerId) => {
   }
 };
 
+const updateIsShooter = async (hostId, isShooter) => {
+  const rooms = db.collection("rooms");
+  await rooms.updateOne({ hostId }, { $set: { isShooter } });
+};
+
 const updateShooterTally = async (
   shooterId,
   winnerId,
@@ -366,6 +371,7 @@ module.exports = {
   getHostId: wrapper(getHostId),
   getRoomPlayers: wrapper(getRoomPlayers),
   updateTally: wrapper(updateTally),
+  updateIsShooter: wrapper(updateIsShooter),
   updateMenu: wrapper(updateMenu),
   previousMenu: wrapper(previousMenu),
 };

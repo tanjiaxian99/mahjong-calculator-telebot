@@ -10,6 +10,7 @@ const {
   getHostId,
   getRoomPlayers,
   updateTally,
+  updateIsShooter,
   updateMenu,
   previousMenu,
 } = require("./db");
@@ -342,7 +343,44 @@ bot.action("ViewTally", async (ctx) => {
 });
 
 // Settings
-bot.action("Settings", async (ctx) => {});
+bot.action("Settings", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+
+  await ctx.reply(
+    "Which setting would you like to adjust?",
+    Markup.inlineKeyboard([
+      [Markup.button.callback("Shooter or non-shooter", "ShooterOrNonShooter")],
+      [Markup.button.callback("Winning System", "WinningSystem")],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
+  );
+});
+
+// Normal or Shooter
+bot.action("ShooterOrNonShooter", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+
+  ctx.reply(
+    "Is the game shooter or non-shooter?",
+    Markup.inlineKeyboard([
+      [Markup.button.callback("Shooter", "true")],
+      [Markup.button.callback("Non-shooter", "false")],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
+  );
+});
+
+bot.action(/true|false/, async (ctx) => {
+  const isShooter = ctx.match.input === "true";
+  const { id } = await ctx.getChat();
+  updateIsShooter(id, isShooter);
+
+  return ctx.answerCbQuery(
+    `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode`
+  );
+});
 
 bot.launch();
 
