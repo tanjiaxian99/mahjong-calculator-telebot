@@ -189,7 +189,7 @@ bot.on("text", (ctx) => {
   ctx.reply("Unrecognised text");
 });
 
-// The host starts the game
+// Sends game menu to all players when the host starts the game
 bot.action("StartGame", async (ctx) => {
   const { id } = await ctx.getChat();
   const hostId = await getHostId(id);
@@ -223,6 +223,7 @@ bot.action("StartGame", async (ctx) => {
   }
 });
 
+// Game menu
 bot.action("Game", async (ctx) => {
   ctx.deleteMessage();
   await getPreviousMenu(ctx, 1);
@@ -236,6 +237,7 @@ bot.action("Game", async (ctx) => {
   ];
 
   if (id === hostId) {
+    buttons.push([Markup.button.callback("⚙️ Settings", "Settings")]);
     buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
   }
 
@@ -305,7 +307,7 @@ bot.action(/Pay_.+/, async (ctx) => {
     return accumulator;
   }, []);
 
-  if (type !== "Matching Flowers") {
+  if (type !== "Matching Flowers" && type !== "Hidden Matching Flowers") {
     buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
   }
   buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
