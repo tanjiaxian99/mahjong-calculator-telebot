@@ -488,6 +488,7 @@ module.exports = {
   getHostId: wrapper(getHostId),
   getRoomPlayers: wrapper(getRoomPlayers),
   updateTally: wrapper(updateTally),
+  getIsShooter: wrapper(getIsShooter),
   updateIsShooter: wrapper(updateIsShooter),
   getWinningSystem: wrapper(getWinningSystem),
   setWinningSystem: wrapper(setWinningSystem),

@@ -10,6 +10,7 @@ const {
   getHostId,
   getRoomPlayers,
   updateTally,
+  getIsShooter,
   updateIsShooter,
   getWinningSystem,
   setWinningSystem,
@@ -18,7 +19,6 @@ const {
 } = require("./db");
 require("dotenv").config();
 
-// TODO: undo mistake
 // TODO: history
 const bot = new Telegraf(process.env.TOKEN);
 
@@ -376,10 +376,13 @@ bot.action("ViewWinningSystem", async (ctx) => {
   ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
+  const shooter = await getIsShooter(id);
   const winningSystem = await getWinningSystem(id);
 
   ctx.replyWithHTML(
     stripIndents`<pre>
+      Current game mode: ${shooter ? "Shooter" : "Non-shooter"}
+      
       |  Tai  | Base | Zimo |
       |-------|------|------|
       | 1 Tai | $${winningSystem.oneTai.base
@@ -431,7 +434,7 @@ bot.action("ShooterOrNonShooter", async (ctx) => {
     "Is the game shooter or non-shooter?",
     Markup.inlineKeyboard([
       [Markup.button.callback("Shooter", "true")],
-      [Markup.button.callback("Non-shooter", "false")],
+      [Markup.button.callback("Non-Shooter", "false")],
       [Markup.button.callback("🔙 Back", previousMenu)],
     ])
   );
@@ -443,7 +446,7 @@ bot.action(/true|false/, async (ctx) => {
   updateIsShooter(id, isShooter);
 
   return ctx.answerCbQuery(
-    `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode` // TODO show tick icon beside the current setting
+    `Game is set to ${isShooter ? "Shooter" : "Non-Shooter"} mode`
   );
 });
 
