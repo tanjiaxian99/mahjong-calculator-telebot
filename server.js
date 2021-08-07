@@ -185,11 +185,6 @@ bot.action("DeleteRoom", async (ctx) => {
   await startMenu(ctx);
 });
 
-// Invalid texts
-bot.on("text", (ctx) => {
-  ctx.reply("Unrecognised text");
-});
-
 // Sends game menu to all players when the host starts the game
 bot.action("StartGame", async (ctx) => {
   const { id } = await ctx.getChat();
@@ -512,16 +507,17 @@ bot.action("CustomWinningSystem", async (ctx) => {
       "\n\n" +
       stripIndents`
       Input: <code>0.5 1 1 1.5 1.5 2.5 2.5 5 5 10</code>
-      Winning System: <pre>|  Tai  | Base | Zimo |
+      Winning System: <pre>
+      |  Tai  | Base | Zimo |
       | 1 Tai | $0.5 | $1   |
       | 2 Tai | $1   | $1.5 |
       | 3 Tai | $1.5 | $2.5 |
       | 4 Tai | $2.5 | $5   |
       | 5 Tai | $5   | $10  |
       </pre>
-
       Input: <code>2 4 4 8 8 16 16 32 32 64</code>
-      Winning System: <pre>|  Tai  | Base | Zimo |
+      Winning System: <pre>
+      |  Tai  | Base | Zimo |
       | 1 Tai | $2   | $4   |
       | 2 Tai | $4   | $8   |
       | 3 Tai | $8   | $16  |
@@ -534,6 +530,56 @@ bot.action("CustomWinningSystem", async (ctx) => {
 
   await deleteMessageIdHistory(id);
   await updateMessageIdHistory(id, message_id);
+});
+
+// Custom winning system
+bot.hears(
+  /((\d\d\.\d\d|\d\.\d\d|\d\.\d|\d\d\d|\d\d|\d)\s){9}(\d\d\.\d\d|\d\.\d\d|\d\.\d|\d\d\d|\d\d|\d)/,
+  async (ctx) => {
+    ctx.deleteMessage();
+    const { id } = await ctx.getChat();
+    let numbers = ctx.match.input.split(" ");
+    numbers = numbers.map((number) => parseInt(number));
+
+    const messageIdHistory = await deleteMessageIdHistory(id);
+    messageIdHistory.forEach((messageId) => ctx.deleteMessage(messageId));
+    const previousMenu = await getPreviousMenu(ctx, 1);
+
+    const winningSystem = {
+      oneTai: {
+        base: numbers[0],
+        zimo: numbers[1],
+      },
+      twoTai: {
+        base: numbers[2],
+        zimo: numbers[3],
+      },
+      threeTai: {
+        base: numbers[4],
+        zimo: numbers[5],
+      },
+      fourTai: {
+        base: numbers[6],
+        zimo: numbers[7],
+      },
+      fiveTai: {
+        base: numbers[8],
+        zimo: numbers[9],
+      },
+    };
+    setWinningSystem(id, winningSystem);
+
+    const { message_id } = await ctx.reply(
+      "Custom winning system successfully set.",
+      Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
+    );
+    updateMessageIdHistory(id, message_id);
+  }
+);
+
+// Invalid texts
+bot.on("text", (ctx) => {
+  ctx.reply("Unrecognised text");
 });
 
 bot.launch();

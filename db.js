@@ -66,7 +66,12 @@ const createRoom = async (chatId, name, username) => {
     { $set: { name, username, passcode, tally: 0 } },
     { upsert: true }
   );
-  await rooms.insertOne({ passcode, hostId: chatId, isShooter: true });
+  await rooms.insertOne({
+    passcode,
+    hostId: chatId,
+    isShooter: true,
+    winningSystem: winningSystems.twentyFourty,
+  });
   return passcode;
 };
 
@@ -354,10 +359,17 @@ const getWinningSystem = async (chatId) => {
 
 const setWinningSystem = async (hostId, selectedSystem) => {
   const rooms = db.collection("rooms");
-  await rooms.updateOne(
-    { hostId },
-    { $set: { winningSystem: winningSystems[selectedSystem] } }
-  );
+  if (typeof selectedSystem === "string") {
+    await rooms.updateOne(
+      { hostId },
+      { $set: { winningSystem: winningSystems[selectedSystem] } }
+    );
+  } else {
+    await rooms.updateOne(
+      { hostId },
+      { $set: { winningSystem: selectedSystem } }
+    );
+  }
 };
 
 const updateShooterTally = async (
