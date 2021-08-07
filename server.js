@@ -18,8 +18,8 @@ const {
 } = require("./db");
 require("dotenv").config();
 
-// TODO: host settings =>  winning system
 // TODO: undo mistake
+// TODO: history
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -233,7 +233,7 @@ bot.action("Game", async (ctx) => {
   const buttons = [
     [Markup.button.callback("Pay", "Pay")],
     [Markup.button.callback("View tally", "ViewTally")],
-    [Markup.button.callback("Undo payment", "UndoPayment")],
+    [Markup.button.callback("Undo payment", "Undo")],
   ];
 
   if (id === hostId) {
@@ -255,27 +255,35 @@ bot.action("Game", async (ctx) => {
 });
 
 // Pay menu
-bot.action("Pay", async (ctx) => {
+bot.action(/^(Pay|Undo)$/, async (ctx) => {
   ctx.deleteMessage();
+  const payOrUndo = ctx.match.input;
   const previousMenu = await getPreviousMenu(ctx, 1);
   const { id } = await ctx.getChat();
 
   const { message_id } = await ctx.reply(
-    "How much did you win by?",
+    payOrUndo === "Pay"
+      ? "How much did you win by?"
+      : "Which payment would you like to undo?",
     Markup.inlineKeyboard([
-      [Markup.button.callback("1️⃣ Tai", "Pay_1 Tai")],
-      [Markup.button.callback("2️⃣ Tai", "Pay_2 Tai")],
-      [Markup.button.callback("3️⃣ Tai", "Pay_3 Tai")],
-      [Markup.button.callback("4️⃣ Tai", "Pay_4 Tai")],
-      [Markup.button.callback("5️⃣ Tai", "Pay_5 Tai")],
-      [Markup.button.callback("Bite", "Pay_Bite")],
-      [Markup.button.callback("Double Bite", "Pay_Double Bite")],
-      [Markup.button.callback("Kong", "Pay_Kong")],
-      [Markup.button.callback("Matching Flowers", "Pay_Matching Flowers")],
+      [Markup.button.callback("1️⃣ Tai", `${payOrUndo}_1 Tai`)],
+      [Markup.button.callback("2️⃣ Tai", `${payOrUndo}_2 Tai`)],
+      [Markup.button.callback("3️⃣ Tai", `${payOrUndo}_3 Tai`)],
+      [Markup.button.callback("4️⃣ Tai", `${payOrUndo}_4 Tai`)],
+      [Markup.button.callback("5️⃣ Tai", `${payOrUndo}_5 Tai`)],
+      [Markup.button.callback("Bite", `${payOrUndo}_Bite`)],
+      [Markup.button.callback("Double Bite", `${payOrUndo}_Double Bite`)],
+      [Markup.button.callback("Kong", `${payOrUndo}_Kong`)],
+      [
+        Markup.button.callback(
+          "Matching Flowers",
+          `${payOrUndo}_Matching Flowers`
+        ),
+      ],
       [
         Markup.button.callback(
           "Hidden Matching Flowers",
-          "Pay_Hidden Matching Flowers"
+          `${payOrUndo}_Hidden Matching Flowers`
         ),
       ],
       [Markup.button.callback("🔙 Back", previousMenu)],
@@ -286,25 +294,30 @@ bot.action("Pay", async (ctx) => {
   await updateMessageIdHistory(id, message_id);
 });
 
-bot.action(/Pay_.+/, async (ctx) => {
-  const type = ctx.match.input.split("_")[1];
+bot.action(/^(Pay|Undo)_[a-zA-Z0-9 ]+$/, async (ctx) => {
+  const [payOrUndo, type] = ctx.match.input.split("_");
   const { id } = await ctx.getChat();
   const players = await getRoomPlayers(id);
 
   // Bite and Hidden Bite / Hidden Kong reduces everyones winnings immediately
   if (type === "Bite" || type === "Double Bite") {
-    updateTally(type, null, id);
+    updateTally(payOrUndo, type, null, id);
     return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
   }
 
   ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
+  const message =
+    type === "Matching Flowers" || type === "Hidden Matching Flowers"
+      ? "Whose flowers do they belong to?"
+      : "Who shot the tile?";
+
   const buttons = players.reduce((accumulator, player) => {
     if (player.chatId !== id) {
       accumulator.push([
         Markup.button.callback(
           `${player.name} (${player.username})`,
-          `${type}_${player.chatId}`
+          `${payOrUndo}_${type}_${player.chatId}`
         ),
       ]);
     }
@@ -312,14 +325,11 @@ bot.action(/Pay_.+/, async (ctx) => {
   }, []);
 
   if (type !== "Matching Flowers" && type !== "Hidden Matching Flowers") {
-    buttons.push([Markup.button.callback("Zimo", `Zimo ${type}_null`)]);
+    buttons.push([
+      Markup.button.callback("Zimo", `${payOrUndo}_Zimo ${type}_null`),
+    ]);
   }
   buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
-
-  const message =
-    type === "Matching Flowers" || type === "Hidden Matching Flowers"
-      ? "Whose flowers do they belong to?"
-      : "Who shot the tile?";
 
   const { message_id } = await ctx.reply(
     message,
@@ -330,11 +340,15 @@ bot.action(/Pay_.+/, async (ctx) => {
   await updateMessageIdHistory(id, message_id);
 });
 
-bot.action(/[a-zA-Z\s]+_(\d{9}|null)/, async (ctx) => {
-  const [type, shooterId] = ctx.match.input.split("_");
+bot.action(/(Pay|Undo)_[a-zA-Z0-9 ]+_(\d{9}|null)/, async (ctx) => {
+  const [payOrUndo, type, shooterId] = ctx.match.input.split("_");
   const { id } = await ctx.getChat();
-  updateTally(type, shooterId, id);
-  return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
+  updateTally(payOrUndo, type, shooterId, id);
+  return ctx.answerCbQuery(
+    payOrUndo === "Pay"
+      ? `Tally updated with ${type} winnings`
+      : `Undid ${type} winnings`
+  );
 });
 
 // View tally

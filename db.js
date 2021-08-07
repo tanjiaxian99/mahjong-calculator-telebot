@@ -146,9 +146,10 @@ const getRoomPlayers = async (chatId) => {
   return players;
 };
 
-const updateTally = async (type, shooterId, winnerId) => {
+const updateTally = async (payOrUndo, type, shooterId, winnerId) => {
   const users = db.collection("users");
   const players = await getRoomPlayers(winnerId);
+  const multiplier = payOrUndo === "Pay" ? 1 : -1;
   const isShooter = await getIsShooter(winnerId);
   const winningSystem = await getWinningSystem(winnerId);
 
@@ -163,16 +164,19 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo,
+            (winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo) *
+              multiplier,
             0,
-            winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo
+            (winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo) *
+              multiplier
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.oneTai.zimo,
-            winningSystem.oneTai.base,
-            winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo
+            winningSystem.oneTai.zimo * multiplier,
+            winningSystem.oneTai.base * multiplier,
+            (winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo) *
+              multiplier
           );
       break;
     case "2 Tai":
@@ -180,16 +184,19 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo,
+            (winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo) *
+              multiplier,
             0,
-            winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo
+            (winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo) *
+              multiplier
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.twoTai.zimo,
-            winningSystem.twoTai.base,
-            winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo
+            winningSystem.twoTai.zimo * multiplier,
+            winningSystem.twoTai.base * multiplier,
+            (winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo) *
+              multiplier
           );
       break;
     case "3 Tai":
@@ -197,16 +204,19 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo,
+            (winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo) *
+              multiplier,
             0,
-            winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo
+            (winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo) *
+              multiplier
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.threeTai.zimo,
-            winningSystem.threeTai.base,
-            winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo
+            winningSystem.threeTai.zimo * multiplier,
+            winningSystem.threeTai.base * multiplier,
+            (winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo) *
+              multiplier
           );
       break;
     case "4 Tai":
@@ -214,16 +224,19 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo,
+            (winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo) *
+              multiplier,
             0,
-            winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo
+            (winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo) *
+              multiplier
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.fourTai.zimo,
-            winningSystem.fourTai.base,
-            winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo
+            winningSystem.fourTai.zimo * multiplier,
+            winningSystem.fourTai.base * multiplier,
+            (winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo) *
+              multiplier
           );
       break;
     case "5 Tai":
@@ -231,65 +244,68 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo,
+            (winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo) *
+              multiplier,
             0,
-            winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo
+            (winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo) *
+              multiplier
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.fiveTai.zimo,
-            winningSystem.fiveTai.base,
-            winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo
+            winningSystem.fiveTai.zimo * multiplier,
+            winningSystem.fiveTai.base * multiplier,
+            (winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo) *
+              multiplier
           );
       break;
     case "Zimo 1 Tai":
       updateZimoTally(
         winnerId,
-        winningSystem.oneTai.zimo,
-        winningSystem.oneTai.zimo * 3
+        winningSystem.oneTai.zimo * multiplier,
+        winningSystem.oneTai.zimo * 3 * multiplier
       );
       break;
     case "Zimo 2 Tai":
       updateZimoTally(
         winnerId,
-        winningSystem.twoTai.zimo,
-        winningSystem.twoTai.zimo * 3
+        winningSystem.twoTai.zimo * multiplier,
+        winningSystem.twoTai.zimo * 3 * multiplier
       );
       break;
     case "Zimo 3 Tai":
       updateZimoTally(
         winnerId,
-        winningSystem.threeTai.zimo,
-        winningSystem.threeTai.zimo * 3
+        winningSystem.threeTai.zimo * multiplier,
+        winningSystem.threeTai.zimo * 3 * multiplier
       );
       break;
     case "Zimo 4 Tai":
       updateZimoTally(
         winnerId,
-        winningSystem.fourTai.zimo,
-        winningSystem.fourTai.zimo * 3
+        winningSystem.fourTai.zimo * multiplier,
+        winningSystem.fourTai.zimo * 3 * multiplier
       );
       break;
     case "Zimo 5 Tai":
       updateZimoTally(
         winnerId,
-        winningSystem.fiveTai.zimo,
-        winningSystem.fiveTai.zimo * 3
+        winningSystem.fiveTai.zimo * multiplier,
+        winningSystem.fiveTai.zimo * 3 * multiplier
       );
       break;
     case "Bite":
       updateZimoTally(
         winnerId,
-        winningSystem.oneTai.base,
-        winningSystem.oneTai.base * 3
+        winningSystem.oneTai.base * multiplier,
+        winningSystem.oneTai.base * 3 * multiplier
       );
       break;
     case "Double Bite":
       updateZimoTally(
         winnerId,
-        winningSystem.oneTai.zimo,
-        winningSystem.oneTai.zimo * 3
+        winningSystem.oneTai.zimo * multiplier,
+        winningSystem.oneTai.zimo * 3 * multiplier
       );
       break;
     case "Kong":
@@ -297,39 +313,39 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.oneTai.base * 3,
+            winningSystem.oneTai.base * 3 * multiplier,
             0,
-            winningSystem.oneTai.base * 3
+            winningSystem.oneTai.base * 3 * multiplier
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            winningSystem.oneTai.base,
-            winningSystem.oneTai.base,
-            winningSystem.oneTai.base * 3
+            winningSystem.oneTai.base * multiplier,
+            winningSystem.oneTai.base * multiplier,
+            winningSystem.oneTai.base * 3 * multiplier
           );
     case "Zimo Kong":
       updateZimoTally(
         winnerId,
-        winningSystem.oneTai.zimo,
-        winningSystem.oneTai.zimo * 3
+        winningSystem.oneTai.zimo * multiplier,
+        winningSystem.oneTai.zimo * 3 * multiplier
       );
       break;
     case "Matching Flowers":
       updateShooterTally(
         shooterId,
         winnerId,
-        winningSystem.oneTai.base,
+        winningSystem.oneTai.base * multiplier,
         0,
-        winningSystem.oneTai.base
+        winningSystem.oneTai.base * multiplier
       );
     case "Hidden Matching Flowers":
       updateShooterTally(
         shooterId,
         winnerId,
-        winningSystem.oneTai.zimo,
+        winningSystem.oneTai.zimo * multiplier,
         0,
-        winningSystem.oneTai.zimo
+        winningSystem.oneTai.zimo * multiplier
       );
   }
 };
