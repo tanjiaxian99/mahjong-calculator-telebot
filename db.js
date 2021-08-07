@@ -1,13 +1,6 @@
 const mongoose = require("mongoose");
 const fetch = require("node-fetch");
-const {
-  tenTwenty,
-  twentyFourty,
-  threeSixHalf,
-  fiftyOne,
-  threeSix,
-  oneTwo,
-} = require("./winningSystems");
+const winningSystems = require("./winningSystems");
 require("dotenv").config();
 
 const uri =
@@ -148,12 +141,11 @@ const getRoomPlayers = async (chatId) => {
   return players;
 };
 
-const bets = threeSix;
-
 const updateTally = async (type, shooterId, winnerId) => {
   const users = db.collection("users");
   const players = await getRoomPlayers(winnerId);
   const isShooter = await getIsShooter(winnerId);
+  const winningSystem = await getWinningSystem(winnerId);
 
   // Resets tally for testing purposes
   for (const player of players) {
@@ -166,16 +158,16 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.oneTai.base * 2 + bets.oneTai.zimo,
+            winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo,
             0,
-            bets.oneTai.base * 2 + bets.oneTai.zimo
+            winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.oneTai.zimo,
-            bets.oneTai.base,
-            bets.oneTai.base * 2 + bets.oneTai.zimo
+            winningSystem.oneTai.zimo,
+            winningSystem.oneTai.base,
+            winningSystem.oneTai.base * 2 + winningSystem.oneTai.zimo
           );
       break;
     case "2 Tai":
@@ -183,16 +175,16 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.twoTai.base * 2 + bets.twoTai.zimo,
+            winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo,
             0,
-            bets.twoTai.base * 2 + bets.twoTai.zimo
+            winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.twoTai.zimo,
-            bets.twoTai.base,
-            bets.twoTai.base * 2 + bets.twoTai.zimo
+            winningSystem.twoTai.zimo,
+            winningSystem.twoTai.base,
+            winningSystem.twoTai.base * 2 + winningSystem.twoTai.zimo
           );
       break;
     case "3 Tai":
@@ -200,16 +192,16 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.threeTai.base * 2 + bets.threeTai.zimo,
+            winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo,
             0,
-            bets.threeTai.base * 2 + bets.threeTai.zimo
+            winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.threeTai.zimo,
-            bets.threeTai.base,
-            bets.threeTai.base * 2 + bets.threeTai.zimo
+            winningSystem.threeTai.zimo,
+            winningSystem.threeTai.base,
+            winningSystem.threeTai.base * 2 + winningSystem.threeTai.zimo
           );
       break;
     case "4 Tai":
@@ -217,16 +209,16 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.fourTai.base * 2 + bets.fourTai.zimo,
+            winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo,
             0,
-            bets.fourTai.base * 2 + bets.fourTai.zimo
+            winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.fourTai.zimo,
-            bets.fourTai.base,
-            bets.fourTai.base * 2 + bets.fourTai.zimo
+            winningSystem.fourTai.zimo,
+            winningSystem.fourTai.base,
+            winningSystem.fourTai.base * 2 + winningSystem.fourTai.zimo
           );
       break;
     case "5 Tai":
@@ -234,73 +226,105 @@ const updateTally = async (type, shooterId, winnerId) => {
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.fiveTai.base * 2 + bets.fiveTai.zimo,
+            winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo,
             0,
-            bets.fiveTai.base * 2 + bets.fiveTai.zimo
+            winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.fiveTai.zimo,
-            bets.fiveTai.base,
-            bets.fiveTai.base * 2 + bets.fiveTai.zimo
+            winningSystem.fiveTai.zimo,
+            winningSystem.fiveTai.base,
+            winningSystem.fiveTai.base * 2 + winningSystem.fiveTai.zimo
           );
       break;
     case "Zimo 1 Tai":
-      updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.oneTai.zimo,
+        winningSystem.oneTai.zimo * 3
+      );
       break;
     case "Zimo 2 Tai":
-      updateZimoTally(winnerId, bets.twoTai.zimo, bets.twoTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.twoTai.zimo,
+        winningSystem.twoTai.zimo * 3
+      );
       break;
     case "Zimo 3 Tai":
-      updateZimoTally(winnerId, bets.threeTai.zimo, bets.threeTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.threeTai.zimo,
+        winningSystem.threeTai.zimo * 3
+      );
       break;
     case "Zimo 4 Tai":
-      updateZimoTally(winnerId, bets.fourTai.zimo, bets.fourTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.fourTai.zimo,
+        winningSystem.fourTai.zimo * 3
+      );
       break;
     case "Zimo 5 Tai":
-      updateZimoTally(winnerId, bets.fiveTai.zimo, bets.fiveTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.fiveTai.zimo,
+        winningSystem.fiveTai.zimo * 3
+      );
       break;
     case "Bite":
-      updateZimoTally(winnerId, bets.oneTai.base, bets.oneTai.base * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.oneTai.base,
+        winningSystem.oneTai.base * 3
+      );
       break;
     case "Double Bite":
-      updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.oneTai.zimo,
+        winningSystem.oneTai.zimo * 3
+      );
       break;
     case "Kong":
       isShooter
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.oneTai.base * 3,
+            winningSystem.oneTai.base * 3,
             0,
-            bets.oneTai.base * 3
+            winningSystem.oneTai.base * 3
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.oneTai.base,
-            bets.oneTai.base,
-            bets.oneTai.base * 3
+            winningSystem.oneTai.base,
+            winningSystem.oneTai.base,
+            winningSystem.oneTai.base * 3
           );
     case "Zimo Kong":
-      updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
+      updateZimoTally(
+        winnerId,
+        winningSystem.oneTai.zimo,
+        winningSystem.oneTai.zimo * 3
+      );
       break;
     case "Matching Flowers":
       updateShooterTally(
         shooterId,
         winnerId,
-        bets.oneTai.base,
+        winningSystem.oneTai.base,
         0,
-        bets.oneTai.base
+        winningSystem.oneTai.base
       );
     case "Hidden Matching Flowers":
       updateShooterTally(
         shooterId,
         winnerId,
-        bets.oneTai.zimo,
+        winningSystem.oneTai.zimo,
         0,
-        bets.oneTai.zimo
+        winningSystem.oneTai.zimo
       );
   }
 };
@@ -317,6 +341,23 @@ const getIsShooter = async (chatId) => {
 const updateIsShooter = async (hostId, isShooter) => {
   const rooms = db.collection("rooms");
   await rooms.updateOne({ hostId }, { $set: { isShooter } });
+};
+
+const getWinningSystem = async (chatId) => {
+  const users = db.collection("users");
+  const rooms = db.collection("rooms");
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  const room = await rooms.findOne({ passcode });
+  return room.winningSystem;
+};
+
+const setWinningSystem = async (hostId, selectedSystem) => {
+  const rooms = db.collection("rooms");
+  await rooms.updateOne(
+    { hostId },
+    { $set: { winningSystem: winningSystems[selectedSystem] } }
+  );
 };
 
 const updateShooterTally = async (
@@ -420,6 +461,8 @@ module.exports = {
   getRoomPlayers: wrapper(getRoomPlayers),
   updateTally: wrapper(updateTally),
   updateIsShooter: wrapper(updateIsShooter),
+  getWinningSystem: wrapper(getWinningSystem),
+  setWinningSystem: wrapper(setWinningSystem),
   updateMenu: wrapper(updateMenu),
   previousMenu: wrapper(previousMenu),
 };

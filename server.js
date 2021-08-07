@@ -11,14 +11,15 @@ const {
   getRoomPlayers,
   updateTally,
   updateIsShooter,
+  getWinningSystem,
+  setWinningSystem,
   updateMenu,
   previousMenu,
 } = require("./db");
 require("dotenv").config();
 
-// TODO: host settings => shooter or normal, money,
+// TODO: host settings =>  winning system
 // TODO: undo mistake
-// TODO: refresh button for view tally
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -396,6 +397,68 @@ bot.action(/true|false/, async (ctx) => {
 
   return ctx.answerCbQuery(
     `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode` // TODO show tick icon beside the current setting
+  );
+});
+
+bot.action("WinningSystem", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+
+  ctx.reply(
+    "Would you like to view or set the winning system?",
+    Markup.inlineKeyboard([
+      [
+        Markup.button.callback(
+          "View current winning system",
+          "ViewWinningSystem"
+        ),
+      ],
+      [Markup.button.callback("Set winning system", "SetWinningSystem")],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
+  );
+});
+
+bot.action("SetWinningSystem", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+
+  ctx.reply(
+    "Which winning system would you like to set?",
+    Markup.inlineKeyboard([
+      [Markup.button.callback("0.1 / 0.2", "SetWinningSystem_tenTwenty")],
+      [Markup.button.callback("0.2 / 0.4", "SetWinningSystem_twentyFourty")],
+      [
+        Markup.button.callback(
+          "0.3 / 0.6 half",
+          "SetWinningSystem_threeSixHalf"
+        ),
+      ],
+      [Markup.button.callback("0.5 / 1", "SetWinningSystem_fiftyOne")],
+      [Markup.button.callback("0.3 / 0.6", "SetWinningSystem_threeSix")],
+      [Markup.button.callback("1 / 2", "SetWinningSystem_oneTwo")],
+      [Markup.button.callback("Custom", "CustomWinningSystem")],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
+  );
+});
+
+bot.action(/SetWinningSystem_\w+/, async (ctx) => {
+  const selectedSystem = ctx.match.input.split("_")[1];
+  const { id } = await ctx.getChat();
+  setWinningSystem(id, selectedSystem);
+
+  const systems = {
+    tenTwenty: "0.1 / 0.2",
+    twentyFourty: "0.2 / 0.4",
+    threeSixHalf: "0.3 / 0.6 half",
+    fiftyOne: "0.5 / 1",
+    threeSix: "0.3 / 0.6",
+    oneTwo: "1 / 2",
+  };
+
+  return ctx.answerCbQuery(
+    `Winning system is set to ${systems[selectedSystem]}`
   );
 });
 
