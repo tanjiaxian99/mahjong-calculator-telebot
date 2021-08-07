@@ -9,6 +9,8 @@ const {
   leaveRoom,
   getHostId,
   getRoomPlayers,
+  updateActionHistory,
+  getActionHistory,
   updateTally,
   getIsShooter,
   updateIsShooter,
@@ -17,6 +19,7 @@ const {
   updateMenu,
   previousMenu,
 } = require("./db");
+const winningSystems = require("./winningSystems");
 require("dotenv").config();
 
 // TODO: history
@@ -55,7 +58,6 @@ const startMenu = async (ctx) => {
 
 bot.action("CreateRoom", async (ctx) => {
   ctx.deleteMessage();
-  const previousMenu = await getPreviousMenu(ctx, 1);
   let { message_id } = await ctx.reply("Creating room...");
 
   const { id, first_name, username } = await ctx.getChat();
@@ -202,6 +204,7 @@ bot.action("StartGame", async (ctx) => {
       [Markup.button.callback("View tally", "ViewTally")],
       [Markup.button.callback("Undo payment", "UndoPayment")],
       [Markup.button.callback("View winning system", "ViewWinningSystem")],
+      [Markup.button.callback("View history", "ViewHistory")],
     ];
 
     if (player.chatId === hostId) {
@@ -232,6 +235,7 @@ bot.action("Game", async (ctx) => {
     [Markup.button.callback("View tally", "ViewTally")],
     [Markup.button.callback("Undo payment", "Undo")],
     [Markup.button.callback("View winning system", "ViewWinningSystem")],
+    [Markup.button.callback("View history", "ViewHistory")],
   ];
 
   if (id === hostId) {
@@ -290,12 +294,16 @@ bot.action(/^(Pay|Undo)$/, async (ctx) => {
 
 bot.action(/^(Pay|Undo)_[a-zA-Z0-9 ]+$/, async (ctx) => {
   const [payOrUndo, type] = ctx.match.input.split("_");
-  const { id } = await ctx.getChat();
+  const { id, first_name, username } = await ctx.getChat();
   const players = await getRoomPlayers(id);
 
   // Bite and Hidden Bite / Hidden Kong reduces everyones winnings immediately
   if (type === "Bite" || type === "Double Bite") {
     updateTally(payOrUndo, type, null, id);
+    updateActionHistory(
+      id,
+      `${first_name} (${username}) got ${type} money from everyone`
+    );
     return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
   }
 
@@ -336,8 +344,26 @@ bot.action(/^(Pay|Undo)_[a-zA-Z0-9 ]+$/, async (ctx) => {
 
 bot.action(/(Pay|Undo)_[a-zA-Z0-9 ]+_(\d{9}|null)/, async (ctx) => {
   const [payOrUndo, type, shooterId] = ctx.match.input.split("_");
-  const { id } = await ctx.getChat();
+  const { id, first_name, username } = await ctx.getChat();
+  const players = await getRoomPlayers(id);
+  const shooter = players.find(
+    (player) => player.chatId === parseInt(shooterId)
+  );
+
   updateTally(payOrUndo, type, shooterId, id);
+  let action = `${first_name} (${username}) won ${type} money ${
+    shooterId === "null"
+      ? "from everyone"
+      : type === "Matching Flowers" || type === "Hidden Matching Flowers"
+      ? `from ${shooter.name} (${shooter.username})`
+      : `with ${shooter.name} (${shooter.username}) as the shooter`
+  }`;
+
+  if (payOrUndo === "Undo") {
+    action = `<del>${action}</del>`;
+  }
+  updateActionHistory(id, action);
+
   return ctx.answerCbQuery(
     payOrUndo === "Pay"
       ? `Tally updated with ${type} winnings`
@@ -381,7 +407,7 @@ bot.action("ViewWinningSystem", async (ctx) => {
 
   ctx.replyWithHTML(
     stripIndents`<pre>
-      Current game mode: ${shooter ? "Shooter" : "Non-shooter"}
+      Current game mode: ${shooter ? "Shooter" : "Non-Shooter"}
       
       |  Tai  | Base | Zimo |
       |-------|------|------|
@@ -402,6 +428,28 @@ bot.action("ViewWinningSystem", async (ctx) => {
         .padEnd(3)} | $${winningSystem.fiveTai.zimo.toString().padEnd(3)} |
     </pre>`,
     Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
+  );
+});
+
+// View history
+bot.action("ViewHistory", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+  const { id } = await ctx.getChat();
+  const actionHistory = await getActionHistory(id);
+
+  ctx.replyWithHTML(
+    actionHistory.length === 0
+      ? "No history to be shown"
+      : actionHistory.reduce(
+          (accumulator, action, index) =>
+            accumulator + `${index + 1}. ${action}\n`,
+          ""
+        ),
+    Markup.inlineKeyboard([
+      [Markup.button.callback("🔄 Refresh", ctx.match.input)],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
   );
 });
 
@@ -444,6 +492,10 @@ bot.action(/true|false/, async (ctx) => {
   const isShooter = ctx.match.input === "true";
   const { id } = await ctx.getChat();
   updateIsShooter(id, isShooter);
+  updateActionHistory(
+    id,
+    `Updated game mode to ${isShooter ? "Shooter" : "Non-Shooter"}`
+  );
 
   return ctx.answerCbQuery(
     `Game is set to ${isShooter ? "Shooter" : "Non-Shooter"} mode`
@@ -475,9 +527,9 @@ bot.action("SetWinningSystem", async (ctx) => {
 });
 
 bot.action(/SetWinningSystem_\w+/, async (ctx) => {
-  const selectedSystem = ctx.match.input.split("_")[1];
+  const systemName = ctx.match.input.split("_")[1];
   const { id } = await ctx.getChat();
-  setWinningSystem(id, selectedSystem);
+  setWinningSystem(id, systemName);
 
   const systems = {
     tenTwenty: "0.1 / 0.2",
@@ -488,9 +540,32 @@ bot.action(/SetWinningSystem_\w+/, async (ctx) => {
     oneTwo: "1 / 2",
   };
 
-  return ctx.answerCbQuery(
-    `Winning system is set to ${systems[selectedSystem]}`
+  const winningSystem = winningSystems[systemName];
+
+  updateActionHistory(
+    id,
+    stripIndents`Updated winning system to <pre>    
+    |  Tai  | Base | Zimo |
+    |-------|------|------|
+    | 1 Tai | $${winningSystem.oneTai.base
+      .toString()
+      .padEnd(3)} | $${winningSystem.oneTai.zimo.toString().padEnd(3)} |
+    | 2 Tai | $${winningSystem.twoTai.base
+      .toString()
+      .padEnd(3)} | $${winningSystem.twoTai.zimo.toString().padEnd(3)} |
+    | 3 Tai | $${winningSystem.threeTai.base
+      .toString()
+      .padEnd(3)} | $${winningSystem.threeTai.zimo.toString().padEnd(3)} |
+    | 4 Tai | $${winningSystem.fourTai.base
+      .toString()
+      .padEnd(3)} | $${winningSystem.fourTai.zimo.toString().padEnd(3)} |
+    | 5 Tai | $${winningSystem.fiveTai.base
+      .toString()
+      .padEnd(3)} | $${winningSystem.fiveTai.zimo.toString().padEnd(3)} |
+    </pre>`
   );
+
+  return ctx.answerCbQuery(`Winning system is set to ${systems[systemName]}`);
 });
 
 bot.action("CustomWinningSystem", async (ctx) => {
@@ -577,6 +652,28 @@ bot.hears(
       Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
     );
     updateMessageIdHistory(id, message_id);
+    updateActionHistory(
+      id,
+      stripIndents`Updated winning system to <pre>    
+      |  Tai  | Base | Zimo |
+      |-------|------|------|
+      | 1 Tai | $${winningSystem.oneTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.oneTai.zimo.toString().padEnd(3)} |
+      | 2 Tai | $${winningSystem.twoTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.twoTai.zimo.toString().padEnd(3)} |
+      | 3 Tai | $${winningSystem.threeTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.threeTai.zimo.toString().padEnd(3)} |
+      | 4 Tai | $${winningSystem.fourTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.fourTai.zimo.toString().padEnd(3)} |
+      | 5 Tai | $${winningSystem.fiveTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.fiveTai.zimo.toString().padEnd(3)} |
+      </pre>`
+    );
   }
 );
 

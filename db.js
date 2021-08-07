@@ -71,6 +71,7 @@ const createRoom = async (chatId, name, username) => {
     hostId: chatId,
     isShooter: true,
     winningSystem: winningSystems.twentyFourty,
+    actionHistory: [],
   });
   return passcode;
 };
@@ -144,6 +145,23 @@ const getRoomPlayers = async (chatId) => {
   const passcode = user.passcode;
   const players = await users.find({ passcode }).toArray();
   return players;
+};
+
+const updateActionHistory = async (chatId, action) => {
+  const users = db.collection("users");
+  const rooms = db.collection("rooms");
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  await rooms.updateOne({ passcode }, { $push: { actionHistory: action } });
+};
+
+const getActionHistory = async (chatId) => {
+  const users = db.collection("users");
+  const rooms = db.collection("rooms");
+  const user = await users.findOne({ chatId });
+  const passcode = user.passcode;
+  const room = await rooms.findOne({ passcode });
+  return room.actionHistory;
 };
 
 const updateTally = async (payOrUndo, type, shooterId, winnerId) => {
@@ -487,6 +505,8 @@ module.exports = {
   leaveRoom: wrapper(leaveRoom),
   getHostId: wrapper(getHostId),
   getRoomPlayers: wrapper(getRoomPlayers),
+  updateActionHistory: wrapper(updateActionHistory),
+  getActionHistory: wrapper(getActionHistory),
   updateTally: wrapper(updateTally),
   getIsShooter: wrapper(getIsShooter),
   updateIsShooter: wrapper(updateIsShooter),
