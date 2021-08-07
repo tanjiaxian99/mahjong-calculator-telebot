@@ -1,5 +1,13 @@
 const mongoose = require("mongoose");
 const fetch = require("node-fetch");
+const {
+  tenTwenty,
+  twentyFourty,
+  threeSixHalf,
+  fiftyOne,
+  threeSix,
+  oneTwo,
+} = require("./winningSystems");
 require("dotenv").config();
 
 const uri =
@@ -140,33 +148,7 @@ const getRoomPlayers = async (chatId) => {
   return players;
 };
 
-const tenTwenty = {
-  oneTai: {
-    base: 0.1,
-    zimo: 0.2,
-  },
-  twoTai: {
-    base: 0.2,
-    zimo: 0.4,
-  },
-  threeTai: {
-    base: 0.4,
-    zimo: 0.8,
-  },
-  fourTai: {
-    base: 0.8,
-    zimo: 1.6,
-  },
-  fiveTai: {
-    base: 1.6,
-    zimo: 3.2,
-  },
-  kong: {
-    base: 0.1,
-    zimo: 0.2,
-  },
-};
-const bets = tenTwenty;
+const bets = threeSix;
 
 const updateTally = async (type, shooterId, winnerId) => {
   const users = db.collection("users");
@@ -280,45 +262,45 @@ const updateTally = async (type, shooterId, winnerId) => {
       updateZimoTally(winnerId, bets.fiveTai.zimo, bets.fiveTai.zimo * 3);
       break;
     case "Bite":
-      updateZimoTally(winnerId, bets.kong.base, bets.kong.base * 3);
+      updateZimoTally(winnerId, bets.oneTai.base, bets.oneTai.base * 3);
       break;
     case "Double Bite":
-      updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
+      updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
       break;
     case "Kong":
       isShooter
         ? updateShooterTally(
             shooterId,
             winnerId,
-            bets.kong.base * 3,
+            bets.oneTai.base * 3,
             0,
-            bets.kong.base * 3
+            bets.oneTai.base * 3
           )
         : updateShooterTally(
             shooterId,
             winnerId,
-            bets.kong.base,
-            bets.kong.base,
-            bets.kong.base * 3
+            bets.oneTai.base,
+            bets.oneTai.base,
+            bets.oneTai.base * 3
           );
     case "Zimo Kong":
-      updateZimoTally(winnerId, bets.kong.zimo, bets.kong.zimo * 3);
+      updateZimoTally(winnerId, bets.oneTai.zimo, bets.oneTai.zimo * 3);
       break;
     case "Matching Flowers":
       updateShooterTally(
         shooterId,
         winnerId,
-        bets.kong.base,
+        bets.oneTai.base,
         0,
-        bets.kong.base
+        bets.oneTai.base
       );
     case "Hidden Matching Flowers":
       updateShooterTally(
         shooterId,
         winnerId,
-        bets.kong.zimo,
+        bets.oneTai.zimo,
         0,
-        bets.kong.zimo
+        bets.oneTai.zimo
       );
   }
 };
@@ -328,7 +310,7 @@ const getIsShooter = async (chatId) => {
   const rooms = db.collection("rooms");
   const user = await users.findOne({ chatId });
   const passcode = user.passcode;
-  const room = rooms.findOne({ passcode });
+  const room = await rooms.findOne({ passcode });
   return room.isShooter;
 };
 

@@ -312,8 +312,13 @@ bot.action(/Pay_.+/, async (ctx) => {
   }
   buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
 
+  const message =
+    type === "Matching Flowers" || type === "Hidden Matching Flowers"
+      ? "Whose flowers do they belong to?"
+      : "Who shot the tile?";
+
   const { message_id } = await ctx.reply(
-    "Who shot the tile?",
+    message,
     Markup.inlineKeyboard(buttons)
   );
 
