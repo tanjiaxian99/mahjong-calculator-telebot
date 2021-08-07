@@ -495,6 +495,47 @@ bot.action(/SetWinningSystem_\w+/, async (ctx) => {
   );
 });
 
+bot.action("CustomWinningSystem", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+  const { id } = await ctx.getChat();
+  const players = await getRoomPlayers(id);
+
+  const { message_id } = await ctx.replyWithHTML(
+    oneLine`
+      Type a custom winning system below. The format of the input is as follows:` +
+      "\n\n" +
+      oneLine`
+      Key in 10 numbers, each with a space in between. The first number refers to
+      1 Tai Base, the second number refers to 1 Tai Zimo, the third number refers to
+      2 Tai Base, and so on. Here are some examples:` +
+      "\n\n" +
+      stripIndents`
+      Input: <code>0.5 1 1 1.5 1.5 2.5 2.5 5 5 10</code>
+      Winning System: <pre>|  Tai  | Base | Zimo |
+      | 1 Tai | $0.5 | $1   |
+      | 2 Tai | $1   | $1.5 |
+      | 3 Tai | $1.5 | $2.5 |
+      | 4 Tai | $2.5 | $5   |
+      | 5 Tai | $5   | $10  |
+      </pre>
+
+      Input: <code>2 4 4 8 8 16 16 32 32 64</code>
+      Winning System: <pre>|  Tai  | Base | Zimo |
+      | 1 Tai | $2   | $4   |
+      | 2 Tai | $4   | $8   |
+      | 3 Tai | $8   | $16  |
+      | 4 Tai | $16  | $32  |
+      | 5 Tai | $32  | $64  |
+      </pre>
+    `,
+    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
+  );
+
+  await deleteMessageIdHistory(id);
+  await updateMessageIdHistory(id, message_id);
+});
+
 bot.launch();
 
 // Enable graceful stop
