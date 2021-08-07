@@ -22,7 +22,6 @@ const {
 const winningSystems = require("./winningSystems");
 require("dotenv").config();
 
-// TODO: history
 const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
@@ -130,13 +129,16 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
     );
     await updateMessageIdHistory(id, message_id);
 
+    const players = await getRoomPlayers(id);
     ({ message_id } = await ctx.telegram.sendMessage(
       response.hostId,
       `${first_name} has joined the room.`,
-      Markup.inlineKeyboard([
-        [Markup.button.callback("Start game", "StartGame")], // TODO only show when there are 4 players
-      ])
+      players.length === 2 &&
+        Markup.inlineKeyboard([
+          [Markup.button.callback("Start game", "StartGame")],
+        ])
     ));
+
     await updateMessageIdHistory(response.hostId, message_id);
   }
 });
@@ -192,6 +194,14 @@ bot.action("StartGame", async (ctx) => {
   const { id } = await ctx.getChat();
   const hostId = await getHostId(id);
   const players = await getRoomPlayers(id);
+
+  if (players.length !== 4) {
+    return ctx.answerCbQuery(
+      `The room is currently missing ${4 - players.length} ${
+        4 - players.length === 1 ? "player" : "players"
+      }`
+    );
+  }
 
   for (const player of players) {
     const messageIdHistory = await deleteMessageIdHistory(player.chatId);
