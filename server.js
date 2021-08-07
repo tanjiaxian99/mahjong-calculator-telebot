@@ -201,15 +201,12 @@ bot.action("StartGame", async (ctx) => {
       [Markup.button.callback("Pay", "Pay")],
       [Markup.button.callback("View tally", "ViewTally")],
       [Markup.button.callback("Undo payment", "UndoPayment")],
+      [Markup.button.callback("View winning system", "ViewWinningSystem")],
     ];
 
     if (player.chatId === hostId) {
       buttons.push([Markup.button.callback("⚙️ Settings", "Settings")]);
       buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
-    } else {
-      buttons.push([
-        Markup.button.callback("View winning system", "ViewWinningSystem"),
-      ]);
     }
 
     const { message_id } = await ctx.telegram.sendMessage(
@@ -234,15 +231,12 @@ bot.action("Game", async (ctx) => {
     [Markup.button.callback("Pay", "Pay")],
     [Markup.button.callback("View tally", "ViewTally")],
     [Markup.button.callback("Undo payment", "Undo")],
+    [Markup.button.callback("View winning system", "ViewWinningSystem")],
   ];
 
   if (id === hostId) {
     buttons.push([Markup.button.callback("⚙️ Settings", "Settings")]);
     buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
-  } else {
-    buttons.push([
-      Markup.button.callback("View winning system", "ViewWinningSystem"),
-    ]);
   }
 
   const { message_id } = await ctx.reply(
@@ -377,60 +371,7 @@ bot.action("ViewTally", async (ctx) => {
   await updateMessageIdHistory(id, message_id);
 });
 
-// Settings
-bot.action("Settings", async (ctx) => {
-  ctx.deleteMessage();
-  const previousMenu = await getPreviousMenu(ctx, 1);
-
-  await ctx.reply(
-    "Which setting would you like to adjust?",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("Shooter or non-shooter", "ShooterOrNonShooter")],
-      [Markup.button.callback("Winning System", "WinningSystem")],
-      [Markup.button.callback("🔙 Back", previousMenu)],
-    ])
-  );
-});
-
-// Normal or Shooter
-bot.action("ShooterOrNonShooter", async (ctx) => {
-  ctx.deleteMessage();
-  const previousMenu = await getPreviousMenu(ctx, 1);
-
-  ctx.reply(
-    "Is the game shooter or non-shooter?",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("Shooter", "true")],
-      [Markup.button.callback("Non-shooter", "false")],
-      [Markup.button.callback("🔙 Back", previousMenu)],
-    ])
-  );
-});
-
-bot.action(/true|false/, async (ctx) => {
-  const isShooter = ctx.match.input === "true";
-  const { id } = await ctx.getChat();
-  updateIsShooter(id, isShooter);
-
-  return ctx.answerCbQuery(
-    `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode` // TODO show tick icon beside the current setting
-  );
-});
-
-bot.action("WinningSystem", async (ctx) => {
-  ctx.deleteMessage();
-  const previousMenu = await getPreviousMenu(ctx, 1);
-
-  ctx.reply(
-    "Would you like to view or set the winning system?",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("View winning system", "ViewWinningSystem")],
-      [Markup.button.callback("Set winning system", "SetWinningSystem")],
-      [Markup.button.callback("🔙 Back", previousMenu)],
-    ])
-  );
-});
-
+// View winning system
 bot.action("ViewWinningSystem", async (ctx) => {
   ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
@@ -458,6 +399,51 @@ bot.action("ViewWinningSystem", async (ctx) => {
         .padEnd(3)} | $${winningSystem.fiveTai.zimo.toString().padEnd(3)} |
     </pre>`,
     Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
+  );
+});
+
+// Settings
+bot.action("Settings", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+
+  await ctx.reply(
+    "Which setting would you like to adjust?",
+    Markup.inlineKeyboard([
+      [
+        Markup.button.callback(
+          "Set shooter or non-shooter",
+          "ShooterOrNonShooter"
+        ),
+      ],
+      [Markup.button.callback("Set winning system", "SetWinningSystem")],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
+  );
+});
+
+// Normal or Shooter
+bot.action("ShooterOrNonShooter", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+
+  ctx.reply(
+    "Is the game shooter or non-shooter?",
+    Markup.inlineKeyboard([
+      [Markup.button.callback("Shooter", "true")],
+      [Markup.button.callback("Non-shooter", "false")],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
+  );
+});
+
+bot.action(/true|false/, async (ctx) => {
+  const isShooter = ctx.match.input === "true";
+  const { id } = await ctx.getChat();
+  updateIsShooter(id, isShooter);
+
+  return ctx.answerCbQuery(
+    `Game is set to ${isShooter ? "Shooter" : "Non-shooter"} mode` // TODO show tick icon beside the current setting
   );
 });
 
