@@ -264,26 +264,19 @@ bot.action(/^(Pay|Undo)$/, async (ctx) => {
       ? "How much did you win by?"
       : "Which payment would you like to undo?",
     Markup.inlineKeyboard([
-      [Markup.button.callback("1️⃣ Tai", `${payOrUndo}_1 Tai`)],
-      [Markup.button.callback("2️⃣ Tai", `${payOrUndo}_2 Tai`)],
-      [Markup.button.callback("3️⃣ Tai", `${payOrUndo}_3 Tai`)],
-      [Markup.button.callback("4️⃣ Tai", `${payOrUndo}_4 Tai`)],
-      [Markup.button.callback("5️⃣ Tai", `${payOrUndo}_5 Tai`)],
-      [Markup.button.callback("Bite", `${payOrUndo}_Bite`)],
-      [Markup.button.callback("Double Bite", `${payOrUndo}_Double Bite`)],
-      [Markup.button.callback("Kong", `${payOrUndo}_Kong`)],
+      [Markup.button.callback("1️⃣ Tai / 一台", `${payOrUndo}_1 Tai`)],
+      [Markup.button.callback("2️⃣ Tai / 两台", `${payOrUndo}_2 Tai`)],
+      [Markup.button.callback("3️⃣ Tai / 三台", `${payOrUndo}_3 Tai`)],
+      [Markup.button.callback("4️⃣ Tai / 四台", `${payOrUndo}_4 Tai`)],
+      [Markup.button.callback("5️⃣ Tai / 五台", `${payOrUndo}_5 Tai`)],
+      [Markup.button.callback("Bite / 咬", `${payOrUndo}_Bite`)],
       [
         Markup.button.callback(
-          "Matching Flowers",
-          `${payOrUndo}_Matching Flowers`
+          "Hidden Bite / 暗咬",
+          `${payOrUndo}_Hidden Bite`
         ),
       ],
-      [
-        Markup.button.callback(
-          "Hidden Matching Flowers",
-          `${payOrUndo}_Hidden Matching Flowers`
-        ),
-      ],
+      [Markup.button.callback("Kong / 杠", `${payOrUndo}_Kong`)],
       [Markup.button.callback("🔙 Back", previousMenu)],
     ])
   );
@@ -297,21 +290,11 @@ bot.action(/^(Pay|Undo)_[a-zA-Z0-9 ]+$/, async (ctx) => {
   const { id, first_name, username } = await ctx.getChat();
   const players = await getRoomPlayers(id);
 
-  // Bite and Hidden Bite / Hidden Kong reduces everyones winnings immediately
-  if (type === "Bite" || type === "Double Bite") {
-    updateTally(payOrUndo, type, null, id);
-    updateActionHistory(
-      id,
-      `${first_name} (${username}) got ${type} money from everyone`
-    );
-    return ctx.answerCbQuery(`Tally updated with ${type} winnings`);
-  }
-
   ctx.deleteMessage();
   const previousMenu = await getPreviousMenu(ctx, 1);
   const message =
-    type === "Matching Flowers" || type === "Hidden Matching Flowers"
-      ? "Whose flowers do they belong to?"
+    type === "Bite" || type === "Hidden Bite"
+      ? "Who should pay you?"
       : "Who shot the tile?";
 
   const buttons = players.reduce((accumulator, player) => {
@@ -326,9 +309,20 @@ bot.action(/^(Pay|Undo)_[a-zA-Z0-9 ]+$/, async (ctx) => {
     return accumulator;
   }, []);
 
-  if (type !== "Matching Flowers" && type !== "Hidden Matching Flowers") {
+  if (type === "Bite" || type === "Hidden Bite") {
     buttons.push([
-      Markup.button.callback("Zimo", `${payOrUndo}_Zimo ${type}_null`),
+      Markup.button.callback("Everyone", `${payOrUndo}_Zimo ${type}_null`),
+    ]);
+  } else if (type === "Kong") {
+    buttons.push([
+      Markup.button.callback(
+        "Hidden Kong / 暗杠",
+        `${payOrUndo}_Zimo ${type}_null`
+      ),
+    ]);
+  } else {
+    buttons.push([
+      Markup.button.callback("Zimo / 自摸", `${payOrUndo}_Zimo ${type}_null`),
     ]);
   }
   buttons.push([Markup.button.callback("🔙 Back", previousMenu)]);
@@ -350,15 +344,18 @@ bot.action(/(Pay|Undo)_[a-zA-Z0-9 ]+_(\d{9}|null)/, async (ctx) => {
     (player) => player.chatId === parseInt(shooterId)
   );
 
-  updateTally(payOrUndo, type, shooterId, id);
-  let action = `${first_name} (${username}) won ${type} money ${
-    shooterId === "null"
-      ? "from everyone"
-      : type === "Matching Flowers" || type === "Hidden Matching Flowers"
-      ? `from ${shooter.name} (${shooter.username})`
-      : `with ${shooter.name} (${shooter.username}) as the shooter`
-  }`;
+  updateTally(payOrUndo, type, shooterId && parseInt(shooterId), id);
 
+  let action = `${first_name} (${username}) `;
+  if (type === "Zimo Kong") {
+    action += `won Hidden Kong money from everyone`;
+  } else if (shooterId === "null") {
+    action += `won ${type} money from everyone`;
+  } else if (type === "Bite" || type === "Hidden Bite") {
+    action += `won ${type} money from ${shooter.name} (${shooter.username})`;
+  } else {
+    action += `won ${type} money with ${shooter.name} (${shooter.username}) as the shooter`;
+  }
   if (payOrUndo === "Undo") {
     action = `<del>${action}</del>`;
   }

@@ -313,18 +313,34 @@ const updateTally = async (payOrUndo, type, shooterId, winnerId) => {
       );
       break;
     case "Bite":
-      updateZimoTally(
-        winnerId,
-        winningSystem.oneTai.base * multiplier,
-        winningSystem.oneTai.base * 3 * multiplier
-      );
+      shooterId !== null
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            winningSystem.oneTai.base * multiplier,
+            0,
+            winningSystem.oneTai.base * multiplier
+          )
+        : updateZimoTally(
+            winnerId,
+            winningSystem.oneTai.base * multiplier,
+            winningSystem.oneTai.base * 3 * multiplier
+          );
       break;
     case "Double Bite":
-      updateZimoTally(
-        winnerId,
-        winningSystem.oneTai.zimo * multiplier,
-        winningSystem.oneTai.zimo * 3 * multiplier
-      );
+      shooterId !== null
+        ? updateShooterTally(
+            shooterId,
+            winnerId,
+            winningSystem.oneTai.zimo * multiplier,
+            0,
+            winningSystem.oneTai.zimo * multiplier
+          )
+        : updateZimoTally(
+            winnerId,
+            winningSystem.oneTai.zimo * multiplier,
+            winningSystem.oneTai.zimo * 3 * multiplier
+          );
       break;
     case "Kong":
       isShooter
@@ -349,22 +365,6 @@ const updateTally = async (payOrUndo, type, shooterId, winnerId) => {
         winningSystem.oneTai.zimo * 3 * multiplier
       );
       break;
-    case "Matching Flowers":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        winningSystem.oneTai.base * multiplier,
-        0,
-        winningSystem.oneTai.base * multiplier
-      );
-    case "Hidden Matching Flowers":
-      updateShooterTally(
-        shooterId,
-        winnerId,
-        winningSystem.oneTai.zimo * multiplier,
-        0,
-        winningSystem.oneTai.zimo * multiplier
-      );
   }
 };
 
@@ -417,7 +417,7 @@ const updateShooterTally = async (
   const players = await getRoomPlayers(winnerId);
 
   for (const player of players) {
-    if (player.chatId === parseInt(shooterId)) {
+    if (player.chatId === shooterId) {
       await users.updateOne(
         { chatId: player.chatId },
         { $inc: { tally: -shooterLoss } }
@@ -441,7 +441,7 @@ const updateZimoTally = async (winnerId, othersLoss, winnerWins) => {
   const players = await getRoomPlayers(winnerId);
 
   for (const player of players) {
-    if (player.chatId !== parseInt(winnerId)) {
+    if (player.chatId !== winnerId) {
       await users.updateOne(
         { chatId: player.chatId },
         { $inc: { tally: -othersLoss } }
