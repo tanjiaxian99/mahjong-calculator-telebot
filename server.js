@@ -349,7 +349,10 @@ bot.action("ViewTally", async (ctx) => {
         )}\n`,
       ""
     ),
-    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
+    Markup.inlineKeyboard([
+      [Markup.button.callback("🔄 Refresh", ctx.match.input)],
+      [Markup.button.callback("🔙 Back", previousMenu)],
+    ])
   );
 
   await deleteMessageIdHistory(id);
