@@ -1,5 +1,5 @@
 const { Telegraf, Markup } = require("telegraf");
-const { oneLine } = require("common-tags");
+const { oneLine, stripIndents } = require("common-tags");
 const {
   registerUser,
   createRoom,
@@ -211,6 +211,10 @@ bot.action("StartGame", async (ctx) => {
     if (player.chatId === hostId) {
       buttons.push([Markup.button.callback("⚙️ Settings", "Settings")]);
       buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
+    } else {
+      buttons.push([
+        Markup.button.callback("View winning system", "ViewWinningSystem"),
+      ]);
     }
 
     const { message_id } = await ctx.telegram.sendMessage(
@@ -240,6 +244,10 @@ bot.action("Game", async (ctx) => {
   if (id === hostId) {
     buttons.push([Markup.button.callback("⚙️ Settings", "Settings")]);
     buttons.push([Markup.button.callback("❌ Delete room", "DeleteRoom")]);
+  } else {
+    buttons.push([
+      Markup.button.callback("View winning system", "ViewWinningSystem"),
+    ]);
   }
 
   const { message_id } = await ctx.reply(
@@ -407,15 +415,40 @@ bot.action("WinningSystem", async (ctx) => {
   ctx.reply(
     "Would you like to view or set the winning system?",
     Markup.inlineKeyboard([
-      [
-        Markup.button.callback(
-          "View current winning system",
-          "ViewWinningSystem"
-        ),
-      ],
+      [Markup.button.callback("View winning system", "ViewWinningSystem")],
       [Markup.button.callback("Set winning system", "SetWinningSystem")],
       [Markup.button.callback("🔙 Back", previousMenu)],
     ])
+  );
+});
+
+bot.action("ViewWinningSystem", async (ctx) => {
+  ctx.deleteMessage();
+  const previousMenu = await getPreviousMenu(ctx, 1);
+  const { id } = await ctx.getChat();
+  const winningSystem = await getWinningSystem(id);
+
+  ctx.replyWithHTML(
+    stripIndents`<pre>
+      |  Tai  | Base | Zimo |
+      |-------|------|------|
+      | 1 Tai | $${winningSystem.oneTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.oneTai.zimo.toString().padEnd(3)} |
+      | 2 Tai | $${winningSystem.twoTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.twoTai.zimo.toString().padEnd(3)} |
+      | 3 Tai | $${winningSystem.threeTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.threeTai.zimo.toString().padEnd(3)} |
+      | 4 Tai | $${winningSystem.fourTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.fourTai.zimo.toString().padEnd(3)} |
+      | 5 Tai | $${winningSystem.fiveTai.base
+        .toString()
+        .padEnd(3)} | $${winningSystem.fiveTai.zimo.toString().padEnd(3)} |
+    </pre>`,
+    Markup.inlineKeyboard([[Markup.button.callback("🔙 Back", previousMenu)]])
   );
 });
 
