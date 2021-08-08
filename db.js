@@ -171,10 +171,10 @@ const updateTally = async (payOrUndo, type, shooterId, winnerId) => {
   const isShooter = await getIsShooter(winnerId);
   const winningSystem = await getWinningSystem(winnerId);
 
-  // Resets tally for testing purposes
-  for (const player of players) {
-    await users.updateOne({ chatId: player.chatId }, { $set: { tally: 0 } });
-  }
+  // // Debugging: reset tally
+  // for (const player of players) {
+  //   await users.updateOne({ chatId: player.chatId }, { $set: { tally: 0 } });
+  // }
 
   switch (type) {
     case "1 Tai":

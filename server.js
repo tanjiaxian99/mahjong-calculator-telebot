@@ -46,7 +46,7 @@ const startMenu = async (ctx) => {
 
   await registerUser(id, first_name, username);
   ctx.reply(
-    "What would you like to do today?",
+    "Welcome to @MahjongCalculator_Bot! What would you like to do today?",
     Markup.inlineKeyboard([
       [Markup.button.callback("Create a room", "CreateRoom")],
       [Markup.button.callback("Join an existing room", "JoinRoom")],
@@ -133,7 +133,7 @@ bot.hears(/^[a-z]{6}$/, async (ctx) => {
     ({ message_id } = await ctx.telegram.sendMessage(
       response.hostId,
       `${first_name} has joined the room.`,
-      players.length === 2 &&
+      players.length === 4 &&
         Markup.inlineKeyboard([
           [Markup.button.callback("Start game", "StartGame")],
         ])
@@ -210,7 +210,7 @@ bot.action("StartGame", async (ctx) => {
     );
 
     const buttons = [
-      [Markup.button.callback("Pay", "Pay")],
+      [Markup.button.callback("Win money", "Pay")],
       [Markup.button.callback("View tally", "ViewTally")],
       [Markup.button.callback("Undo payment", "UndoPayment")],
       [Markup.button.callback("View winning system", "ViewWinningSystem")],
@@ -241,7 +241,7 @@ bot.action("Game", async (ctx) => {
   const hostId = await getHostId(id);
 
   const buttons = [
-    [Markup.button.callback("Pay", "Pay")],
+    [Markup.button.callback("Win money", "Pay")],
     [Markup.button.callback("View tally", "ViewTally")],
     [Markup.button.callback("Undo payment", "Undo")],
     [Markup.button.callback("View winning system", "ViewWinningSystem")],
