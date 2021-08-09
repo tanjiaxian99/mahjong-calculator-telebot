@@ -1,5 +1,7 @@
 const { Telegraf, Markup } = require("telegraf");
 const { oneLine, stripIndents } = require("common-tags");
+const express = require("express");
+const app = express();
 const {
   registerUser,
   createRoom,
@@ -21,6 +23,17 @@ const {
 } = require("./db");
 const winningSystems = require("./winningSystems");
 require("dotenv").config();
+
+const PORT = process.env.PORT || 4000;
+
+// Connect express to keep port open
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}`);
+  wakeUpDyno("https://floating-retreat-81379.herokuapp.com/");
+});
 
 const bot = new Telegraf(process.env.TOKEN);
 
@@ -689,7 +702,8 @@ bot.on("text", (ctx) => {
   ctx.reply("Unrecognised text");
 });
 
-bot.launch();
+bot.catch((err) => console.log(err));
+bot.startPolling();
 
 // Enable graceful stop
 process.once("SIGINT", () => bot.stop("SIGINT"));

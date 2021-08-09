@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const uri =
   process.env.NODE_ENV === "development"
-    ? "mongodb://localhost:27017/mahjong-winnings"
+    ? "mongodb://localhost:27017/mahjong-calculator"
     : process.env.MONGODB_URI;
 
 mongoose.connect(uri, {
