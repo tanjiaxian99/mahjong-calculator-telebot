@@ -24,17 +24,22 @@ const {
 const winningSystems = require("./winningSystems");
 require("dotenv").config();
 
-const PORT = process.env.PORT || 4000;
+const bot = new Telegraf(process.env.TOKEN);
+
+// Set webhook
+bot.telegram.setWebhook(
+  `${process.env.BOT_URL}:443/${process.env.BOT_SECRET_PATH}`
+);
+app.use(bot.webhookCallback(`/${process.env.BOT_SECRET_PATH}`));
 
 // Connect express to keep port open
+const PORT = process.env.PORT || 4000;
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
 });
-
-const bot = new Telegraf(process.env.TOKEN);
 
 const getPreviousMenu = async (ctx, skips) => {
   try {
@@ -236,7 +241,7 @@ bot.action("StartGame", async (ctx) => {
 
     const { message_id } = await ctx.telegram.sendMessage(
       player.chatId,
-      "The game has began! What would you like to do?",
+      "The game has begun! What would you like to do?",
       Markup.inlineKeyboard(buttons)
     );
 
