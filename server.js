@@ -33,7 +33,7 @@ bot.telegram.setWebhook(
 app.use(bot.webhookCallback(`/${process.env.BOT_SECRET_PATH}`));
 
 // Connect express to keep port open
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
@@ -707,7 +707,6 @@ bot.on("text", (ctx) => {
 });
 
 bot.catch((err) => console.log(err));
-bot.startPolling();
 
 // Enable graceful stop
 process.once("SIGINT", () => bot.stop("SIGINT"));
